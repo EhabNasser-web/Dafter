@@ -20,6 +20,7 @@ import rateLimit from 'express-rate-limit';
 import { loadModules } from './moduleLoader.js';
 import { chatRouter } from '../modules/chat/router.js';
 import { startScheduler } from './scheduler.js';
+import { runMigrations } from '../../scripts/migrate.js';
 
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
@@ -90,6 +91,12 @@ app.use('/admin', adminRouter);
 app.use('/api/chat', chatRouter);
 
 (async () => {
+  try {
+    await runMigrations();
+  } catch (migErr) {
+    console.error('[server] Initial migration warning:', migErr.message);
+  }
+
   await loadModules(app);
   startScheduler();
 
@@ -107,8 +114,8 @@ app.use('/api/chat', chatRouter);
     res.status(500).json({ error: 'خطأ غير متوقع في الخادم.' });
   });
 
-  app.listen(PORT, () => {
-    console.log(`🚀  Daftar – http://localhost:${PORT}  [${process.env.NODE_ENV || 'development'}]`);
+  app.listen(PORT, '0.0.0.0', () => {
+    console.log(`🚀  Daftar – http://0.0.0.0:${PORT}  [${process.env.NODE_ENV || 'development'}]`);
   });
 })();
 

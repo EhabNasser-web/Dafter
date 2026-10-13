@@ -104,8 +104,6 @@ const REQUIRED_FILES = [
   'public/brand/icon-192.png',
   'public/brand/icon-512.png',
   'railway.json',
-  'Dockerfile',
-  '.dockerignore',
 ];
 
 for (const relPath of REQUIRED_FILES) {
