@@ -1,0 +1,23 @@
+# Dependencies
+node_modules/
+
+# Environment – never commit real secrets
+.env
+
+# Build / cache
+dist/
+.cache/
+
+# Drizzle generated migrations (keep the handwritten ones in /drizzle)
+drizzle/meta/
+
+# DB backups (stored locally)
+backups/
+
+# Logs
+*.log
+npm-debug.log*
+
+# OS
+.DS_Store
+Thumbs.db

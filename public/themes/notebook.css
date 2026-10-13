@@ -1,0 +1,62 @@
+/* =============================================================
+   public/themes/notebook.css
+   ثيم دفتر – الوضع الفاتح والداكن
+   جميع الألوان والخطوط والمسافات تأتي من هذا الملف فقط.
+   يُفعَّل بوضع data-theme="notebook" على عنصر <html>.
+   ============================================================= */
+
+[data-theme="notebook"] {
+  /* ─── ألوان أساسية ──────────────────────────────────────────── */
+  --color-bg:            #F4EBDD;   /* كريم دافئ */
+  --color-surface:       #FAF6EF;   /* سطح أفتح */
+  --color-surface-2:     #EDE4D4;   /* سطح ثانوي */
+  --color-ink:           #1F2A44;   /* نيلي غامق */
+  --color-ink-light:     #4A5568;
+  --color-ink-muted:     #8892A4;
+  --color-accent:        #B5523B;   /* تراب طيني */
+  --color-accent-dark:   #8B3D2C;
+  --color-success:       #2D6A4F;
+
+  /* ─── حدود ───────────────────────────────────────────────────── */
+  --color-border:        rgba(31, 42, 68, 0.12);
+  --color-border-strong: rgba(31, 42, 68, 0.25);
+
+  /* ─── خطوط ───────────────────────────────────────────────────── */
+  --font-display: 'Reem Kufi', 'Aref Ruqaa', Georgia, serif;
+  --font-body:    'Cairo', 'Segoe UI', system-ui, sans-serif;
+
+  /* ─── ظلال ───────────────────────────────────────────────────── */
+  --shadow-sm: 0 1px 3px  rgba(31, 42, 68, 0.08);
+  --shadow-md: 0 4px 16px rgba(31, 42, 68, 0.10);
+  --shadow-lg: 0 8px 32px rgba(31, 42, 68, 0.14);
+
+  /* ─── زوايا وانتقالات ─────────────────────────────────────────── */
+  --radius-sm: 8px;
+  --radius-md: 16px;
+  --radius-lg: 24px;
+  --transition: 0.2s ease;
+
+  /* ─── زر الميكروفون ───────────────────────────────────────────── */
+  --mic-size:  72px;
+  --mic-color: var(--color-accent);
+  --mic-ring:  rgba(181, 82, 59, 0.22);
+}
+
+/* ─── الوضع الداكن ──────────────────────────────────────────── */
+[data-theme="notebook"][data-dark="true"],
+[data-theme="notebook"].dark {
+  --color-bg:            #181F2E;
+  --color-surface:       #1E2738;
+  --color-surface-2:     #252E44;
+  --color-ink:           #EDE8E0;
+  --color-ink-light:     #B8B0A2;
+  --color-ink-muted:     #6B7487;
+  --color-accent:        #D4714F;
+  --color-accent-dark:   #B5523B;
+  --color-success:       #4CAF82;
+  --color-border:        rgba(237, 232, 224, 0.09);
+  --color-border-strong: rgba(237, 232, 224, 0.18);
+  --shadow-sm: 0 1px 3px  rgba(0, 0, 0, 0.25);
+  --shadow-md: 0 4px 16px rgba(0, 0, 0, 0.30);
+  --shadow-lg: 0 8px 32px rgba(0, 0, 0, 0.40);
+}

@@ -1,0 +1,2082 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl" data-theme="notebook">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <meta name="theme-color" content="#1F2A44" id="meta-theme">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <title>دفتر</title>
+  <link rel="manifest" href="/manifest.json">
+  <link rel="icon" href="/favicon.png" type="image/png">
+  <link rel="apple-touch-icon" href="/brand/icon-192.png">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;500;600;700;800&family=Reem+Kufi:wght@500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/themes/notebook.css">
+
+  <style>
+    /* ══════════════════════════════════════════════════════════
+       إعادة تعيين المتغيرات والأساسيات
+    ══════════════════════════════════════════════════════════ */
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    html { height: 100%; }
+    html[data-dark="true"] { color-scheme: dark; }
+
+    body {
+      height: 100%;
+      height: 100dvh;
+      overflow: hidden;
+      font-family: var(--font-body);
+      background: var(--color-bg);
+      color: var(--color-ink);
+      -webkit-font-smoothing: antialiased;
+      transition: background 0.25s ease, color 0.25s ease;
+    }
+
+    /* ══════════════════════════════════════════════════════════
+       شاشة تسجيل الدخول
+    ══════════════════════════════════════════════════════════ */
+    #login-screen {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      height: 100%;
+      padding: 24px;
+      gap: 24px;
+      overflow-y: auto;
+    }
+    .login-brand {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 12px;
+      text-align: center;
+    }
+    .login-brand img {
+      width: 88px;
+      height: 88px;
+      border-radius: 22px;
+      box-shadow: var(--shadow-md);
+    }
+    .login-brand h1 {
+      font-family: var(--font-display);
+      font-size: 2.5rem;
+      color: var(--color-ink);
+      line-height: 1;
+    }
+    .login-brand p {
+      color: var(--color-ink-muted);
+      font-size: 0.95rem;
+    }
+    .login-card {
+      width: 100%;
+      max-width: 380px;
+      background: var(--color-surface);
+      border: 1px solid var(--color-border);
+      border-radius: var(--radius-lg);
+      padding: 28px;
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+      box-shadow: var(--shadow-md);
+    }
+    .field-label {
+      font-size: 0.82rem;
+      font-weight: 700;
+      color: var(--color-ink-light);
+      margin-bottom: 6px;
+      display: block;
+    }
+    .field-input {
+      width: 100%;
+      background: var(--color-bg);
+      border: 1.5px solid var(--color-border-strong);
+      border-radius: var(--radius-sm);
+      padding: 12px 14px;
+      font-family: var(--font-body);
+      font-size: 0.95rem;
+      color: var(--color-ink);
+      direction: ltr;
+      text-align: left;
+      outline: none;
+      transition: border-color var(--transition), box-shadow var(--transition);
+    }
+    .field-input:focus {
+      border-color: var(--color-accent);
+      box-shadow: 0 0 0 3px var(--mic-ring);
+    }
+    .btn-primary {
+      width: 100%;
+      background: var(--color-accent);
+      color: #fff;
+      border: none;
+      border-radius: var(--radius-sm);
+      padding: 13px;
+      font-family: var(--font-body);
+      font-size: 1rem;
+      font-weight: 700;
+      cursor: pointer;
+      transition: background var(--transition), transform 0.1s;
+    }
+    .btn-primary:hover  { background: var(--color-accent-dark); }
+    .btn-primary:active { transform: scale(0.98); }
+    .login-error {
+      text-align: center;
+      color: var(--color-accent);
+      font-size: 0.85rem;
+      display: none;
+    }
+
+    /* ══════════════════════════════════════════════════════════
+       هيكل التطبيق الرئيسي
+    ══════════════════════════════════════════════════════════ */
+    #app {
+      display: none;
+      flex-direction: column;
+      height: 100%;
+      height: 100dvh;
+      position: relative;
+    }
+
+    /* الهيدر العلوي */
+    .app-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 16px;
+      height: 56px;
+      background: var(--color-surface);
+      border-bottom: 1px solid var(--color-border);
+      flex-shrink: 0;
+      z-index: 20;
+    }
+    .header-right {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+    .menu-trigger {
+      background: none;
+      border: none;
+      cursor: pointer;
+      color: var(--color-ink);
+      width: 38px;
+      height: 38px;
+      border-radius: var(--radius-sm);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: background var(--transition);
+    }
+    .menu-trigger:hover { background: var(--color-surface-2); }
+    .brand-title {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      cursor: pointer;
+    }
+    .brand-title img {
+      width: 32px;
+      height: 32px;
+      border-radius: 9px;
+    }
+    .brand-title span {
+      font-family: var(--font-display);
+      font-size: 1.4rem;
+      font-weight: 700;
+      color: var(--color-ink);
+      line-height: 1;
+    }
+    .header-left {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .icon-btn {
+      background: none;
+      border: none;
+      cursor: pointer;
+      color: var(--color-ink-light);
+      border-radius: var(--radius-sm);
+      width: 36px;
+      height: 36px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: background var(--transition), color var(--transition);
+    }
+    .icon-btn:hover { background: var(--color-surface-2); color: var(--color-ink); }
+
+    /* حاوية الشاشات */
+    .screens {
+      flex: 1;
+      overflow: hidden;
+      position: relative;
+    }
+    .screen {
+      position: absolute;
+      inset: 0;
+      overflow-y: auto;
+      -webkit-overflow-scrolling: touch;
+      padding: 16px;
+      display: none;
+    }
+    .screen.active { display: block; }
+
+    /* ══════════════════════════════════════════════════════════
+       الشريط الجانبي (Sidebar Drawer) - الملف التعريفي "مين أنا"
+    ══════════════════════════════════════════════════════════ */
+    .sidebar-overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(15, 23, 42, 0.45);
+      backdrop-filter: blur(2px);
+      z-index: 100;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.25s ease;
+    }
+    .sidebar-overlay.open {
+      opacity: 1;
+      pointer-events: auto;
+    }
+    .sidebar-drawer {
+      position: fixed;
+      top: 0;
+      bottom: 0;
+      right: 0;
+      width: 340px;
+      max-width: 88vw;
+      background: var(--color-surface);
+      box-shadow: -4px 0 28px rgba(0, 0, 0, 0.2);
+      z-index: 101;
+      transform: translateX(100%);
+      transition: transform 0.28s cubic-bezier(0.16, 1, 0.3, 1);
+      display: flex;
+      flex-direction: column;
+      overflow-y: auto;
+    }
+    .sidebar-drawer.open {
+      transform: translateX(0);
+    }
+    .drawer-header {
+      padding: 20px 20px 16px;
+      background: var(--color-surface-2);
+      border-bottom: 1px solid var(--color-border);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    .drawer-user {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+    .drawer-avatar {
+      width: 48px;
+      height: 48px;
+      border-radius: 14px;
+      background: var(--color-ink);
+      color: var(--color-bg);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.3rem;
+      font-weight: 700;
+      border: 2px solid var(--color-border-strong);
+    }
+    .drawer-info h3 {
+      font-size: 1.05rem;
+      font-weight: 700;
+      color: var(--color-ink);
+    }
+    .drawer-info .plan-tag {
+      display: inline-block;
+      font-size: 0.72rem;
+      padding: 2px 8px;
+      border-radius: 12px;
+      background: rgba(181, 82, 59, 0.15);
+      color: var(--color-accent);
+      font-weight: 600;
+      margin-top: 2px;
+    }
+    .drawer-close {
+      background: none;
+      border: none;
+      cursor: pointer;
+      width: 32px;
+      height: 32px;
+      border-radius: 50%;
+      color: var(--color-ink-muted);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .drawer-close:hover { background: var(--color-border); }
+
+    .drawer-body {
+      padding: 20px;
+      display: flex;
+      flex-direction: column;
+      gap: 20px;
+      flex: 1;
+    }
+    .drawer-section-title {
+      font-size: 0.88rem;
+      font-weight: 700;
+      color: var(--color-ink);
+      margin-bottom: 10px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .profile-card {
+      background: var(--color-bg);
+      border: 1px solid var(--color-border-strong);
+      border-radius: var(--radius-md);
+      padding: 16px;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+    .profile-card .p-field {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+    .profile-card .p-label {
+      font-size: 0.75rem;
+      font-weight: 700;
+      color: var(--color-ink-muted);
+    }
+    .profile-card .p-input {
+      background: var(--color-surface);
+      border: 1px solid var(--color-border);
+      border-radius: var(--radius-sm);
+      padding: 8px 12px;
+      font-family: var(--font-body);
+      font-size: 0.9rem;
+      color: var(--color-ink);
+      outline: none;
+    }
+    .profile-card .p-input:focus { border-color: var(--color-accent); }
+    .btn-save-profile {
+      background: var(--color-ink);
+      color: var(--color-bg);
+      border: none;
+      padding: 10px;
+      border-radius: var(--radius-sm);
+      font-family: var(--font-body);
+      font-weight: 700;
+      font-size: 0.88rem;
+      cursor: pointer;
+      transition: opacity 0.2s;
+    }
+    .btn-save-profile:active { transform: scale(0.98); }
+
+    /* إحصائيات سريعة في الشريط */
+    .drawer-stats {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+    }
+    .stat-box {
+      background: var(--color-surface-2);
+      border: 1px solid var(--color-border);
+      border-radius: var(--radius-sm);
+      padding: 12px;
+      text-align: center;
+    }
+    .stat-box .s-num {
+      font-size: 1.25rem;
+      font-weight: 800;
+      color: var(--color-accent);
+      font-family: var(--font-display);
+    }
+    .stat-box .s-txt {
+      font-size: 0.72rem;
+      color: var(--color-ink-muted);
+      margin-top: 2px;
+    }
+
+    /* ══════════════════════════════════════════════════════════
+       شاشة الدردشة
+    ══════════════════════════════════════════════════════════ */
+    #screen-chat {
+      display: flex;
+      flex-direction: column;
+      padding: 0;
+    }
+    #screen-chat.active { display: flex; }
+
+    .messages-area {
+      flex: 1;
+      overflow-y: auto;
+      -webkit-overflow-scrolling: touch;
+      padding: 16px;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+    .welcome-msg {
+      margin: auto;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      text-align: center;
+      padding: 32px 16px;
+      gap: 10px;
+      color: var(--color-ink-muted);
+    }
+    .welcome-msg img {
+      width: 56px;
+      height: 56px;
+      border-radius: 14px;
+      opacity: 0.9;
+    }
+    .welcome-msg h2 {
+      font-family: var(--font-display);
+      font-size: 1.6rem;
+      color: var(--color-ink);
+    }
+    .welcome-msg p {
+      font-size: 0.9rem;
+      line-height: 1.7;
+    }
+    .hints {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      margin-top: 14px;
+      width: 100%;
+      max-width: 360px;
+    }
+    .hint-chip {
+      background: var(--color-surface);
+      border: 1px solid var(--color-border);
+      border-radius: 20px;
+      padding: 9px 16px;
+      font-family: var(--font-body);
+      font-size: 0.85rem;
+      color: var(--color-ink);
+      cursor: pointer;
+      text-align: right;
+      transition: background var(--transition), border-color var(--transition);
+    }
+    .hint-chip:hover {
+      background: var(--color-surface-2);
+      border-color: var(--color-accent);
+    }
+
+    /* فقاعات الرسائل */
+    .message {
+      max-width: 82%;
+      padding: 11px 16px;
+      border-radius: var(--radius-md);
+      font-size: 0.95rem;
+      line-height: 1.65;
+      word-break: break-word;
+      animation: msgIn 0.18s ease;
+    }
+    @keyframes msgIn {
+      from { opacity: 0; transform: translateY(6px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+    .message.user {
+      align-self: flex-end;
+      background: var(--color-ink);
+      color: var(--color-bg);
+      border-bottom-left-radius: 4px;
+    }
+    .message.assistant {
+      align-self: flex-start;
+      background: var(--color-surface);
+      border: 1px solid var(--color-border);
+      color: var(--color-ink);
+      border-bottom-right-radius: 4px;
+      box-shadow: var(--shadow-sm);
+    }
+    .msg-typing {
+      align-self: flex-start;
+      background: var(--color-surface);
+      border: 1px solid var(--color-border);
+      border-radius: var(--radius-md);
+      border-bottom-right-radius: 4px;
+      padding: 12px 18px;
+      animation: msgIn 0.18s ease;
+    }
+    .typing-dots { display: flex; gap: 5px; align-items: center; }
+    .typing-dots span {
+      width: 7px;
+      height: 7px;
+      background: var(--color-ink-muted);
+      border-radius: 50%;
+      animation: tdot 1.1s infinite;
+    }
+    .typing-dots span:nth-child(2) { animation-delay: 0.16s; }
+    .typing-dots span:nth-child(3) { animation-delay: 0.32s; }
+    @keyframes tdot {
+      0%,75%,100% { transform: translateY(0); opacity: 0.5; }
+      35%          { transform: translateY(-5px); opacity: 1; }
+    }
+
+    /* شريط الإدخال */
+    .input-area {
+      display: flex;
+      align-items: flex-end;
+      gap: 10px;
+      padding: 10px 14px;
+      padding-bottom: calc(10px + env(safe-area-inset-bottom, 0px));
+      background: var(--color-surface);
+      border-top: 1px solid var(--color-border);
+      flex-shrink: 0;
+    }
+    .text-wrap {
+      flex: 1;
+      background: var(--color-bg);
+      border: 1.5px solid var(--color-border-strong);
+      border-radius: 20px;
+      padding: 9px 14px;
+      transition: border-color var(--transition);
+    }
+    .text-wrap:focus-within { border-color: var(--color-accent); }
+    #chat-input {
+      width: 100%;
+      border: none;
+      background: transparent;
+      font-family: var(--font-body);
+      font-size: 0.93rem;
+      color: var(--color-ink);
+      outline: none;
+      resize: none;
+      max-height: 96px;
+      line-height: 1.5;
+    }
+    #chat-input::placeholder { color: var(--color-ink-muted); }
+    .send-btn {
+      width: 44px;
+      height: 44px;
+      flex-shrink: 0;
+      border-radius: 50%;
+      background: var(--color-ink);
+      color: var(--color-bg);
+      border: none;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: transform 0.12s, background var(--transition);
+      order: -1;
+    }
+    .send-btn:active { transform: scale(0.9); }
+    .mic-btn {
+      width: 44px;
+      height: 44px;
+      flex-shrink: 0;
+      border-radius: 50%;
+      background: var(--color-accent);
+      color: #fff;
+      border: none;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      box-shadow: 0 0 0 0 var(--mic-ring);
+      transition: transform 0.12s, background var(--transition), box-shadow 0.3s;
+    }
+    .mic-btn.recording {
+      background: #c0392b;
+      animation: micPulse 1.3s ease infinite;
+    }
+    @keyframes micPulse {
+      0%   { box-shadow: 0 0 0 0   var(--mic-ring); }
+      70%  { box-shadow: 0 0 0 18px rgba(192,57,43,0); }
+      100% { box-shadow: 0 0 0 0   rgba(192,57,43,0); }
+    }
+
+    /* ══════════════════════════════════════════════════════════
+       شاشة المصروفات المعاد تصميمها (Notebook Ledger)
+    ══════════════════════════════════════════════════════════ */
+    .expenses-header-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 14px;
+    }
+    .screen-title {
+      font-family: var(--font-display);
+      font-size: 1.5rem;
+      font-weight: 700;
+      color: var(--color-ink);
+    }
+    .btn-quick-add {
+      background: var(--color-accent);
+      color: #fff;
+      border: none;
+      border-radius: 20px;
+      padding: 6px 14px;
+      font-family: var(--font-body);
+      font-size: 0.82rem;
+      font-weight: 700;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      transition: background 0.2s;
+    }
+    .btn-quick-add:hover { background: var(--color-accent-dark); }
+
+    /* بطاقة الملخص المالي كدفتر حسابات أنيق */
+    .ledger-summary-card {
+      background: var(--color-surface);
+      border: 1px solid var(--color-border);
+      border-radius: var(--radius-lg);
+      padding: 20px;
+      margin-bottom: 16px;
+      box-shadow: var(--shadow-sm);
+      position: relative;
+      overflow: hidden;
+    }
+    .ledger-summary-card::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: 4px;
+      background: linear-gradient(90deg, var(--color-accent), var(--color-ink));
+    }
+    .ledger-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 16px;
+      margin-bottom: 16px;
+    }
+    .ledger-col {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+    .ledger-label {
+      font-size: 0.76rem;
+      color: var(--color-ink-muted);
+      font-weight: 600;
+      display: flex;
+      align-items: center;
+      gap: 4px;
+    }
+    .ledger-val {
+      font-family: var(--font-display);
+      font-size: 1.35rem;
+      font-weight: 700;
+    }
+    .ledger-val.expense { color: var(--color-accent); }
+    .ledger-val.income  { color: var(--color-success); }
+    .ledger-net-box {
+      border-top: 1px dashed var(--color-border-strong);
+      padding-top: 12px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    .ledger-net-val {
+      font-family: var(--font-display);
+      font-size: 1.2rem;
+      font-weight: 700;
+    }
+    .ledger-net-val.positive { color: var(--color-success); }
+    .ledger-net-val.negative { color: var(--color-accent); }
+
+    /* فلاتر الفئات */
+    .category-pills {
+      display: flex;
+      gap: 8px;
+      overflow-x: auto;
+      padding-bottom: 8px;
+      margin-bottom: 16px;
+      -webkit-overflow-scrolling: touch;
+      scrollbar-width: none;
+    }
+    .category-pills::-webkit-scrollbar { display: none; }
+    .cat-pill {
+      background: var(--color-surface);
+      border: 1px solid var(--color-border);
+      border-radius: 20px;
+      padding: 6px 14px;
+      font-family: var(--font-body);
+      font-size: 0.8rem;
+      font-weight: 600;
+      color: var(--color-ink-light);
+      cursor: pointer;
+      white-space: nowrap;
+      transition: all 0.15s ease;
+      flex-shrink: 0;
+    }
+    .cat-pill.active {
+      background: var(--color-ink);
+      color: var(--color-bg);
+      border-color: var(--color-ink);
+    }
+
+    /* قائمة بطاقات الإيصالات الورقية (Paper Receipts) */
+    .receipt-feed {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      padding-bottom: 40px;
+    }
+    .receipt-item {
+      background: var(--color-surface);
+      border: 1px solid var(--color-border);
+      border-radius: var(--radius-md);
+      box-shadow: var(--shadow-sm);
+      position: relative;
+      overflow: hidden;
+      transition: transform 0.15s ease, box-shadow 0.15s ease;
+    }
+    .receipt-item:hover {
+      transform: translateY(-1px);
+      box-shadow: var(--shadow-md);
+    }
+    /* خط التثقيب العلوي للإيصال */
+    .receipt-tear-top {
+      height: 6px;
+      background: repeating-linear-gradient(
+        90deg,
+        var(--color-bg),
+        var(--color-bg) 6px,
+        transparent 6px,
+        transparent 12px
+      );
+      opacity: 0.7;
+    }
+    .receipt-content {
+      padding: 14px 16px;
+      display: flex;
+      align-items: center;
+      gap: 14px;
+    }
+    .receipt-icon-badge {
+      width: 44px;
+      height: 44px;
+      border-radius: 12px;
+      background: var(--color-surface-2);
+      border: 1px solid var(--color-border);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.25rem;
+      flex-shrink: 0;
+    }
+    .receipt-main {
+      flex: 1;
+      min-width: 0;
+    }
+    .receipt-row-top {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+    }
+    .receipt-category-name {
+      font-weight: 700;
+      font-size: 0.95rem;
+      color: var(--color-ink);
+    }
+    .receipt-price {
+      font-family: var(--font-display);
+      font-weight: 700;
+      font-size: 1.15rem;
+      direction: ltr;
+      white-space: nowrap;
+    }
+    .receipt-price.expense { color: var(--color-accent); }
+    .receipt-price.income  { color: var(--color-success); }
+    .receipt-row-bottom {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-top: 4px;
+      font-size: 0.78rem;
+      color: var(--color-ink-muted);
+    }
+    .receipt-note-text {
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      max-width: 170px;
+    }
+    .receipt-delete-btn {
+      background: none;
+      border: none;
+      color: var(--color-ink-muted);
+      cursor: pointer;
+      padding: 4px;
+      font-size: 0.8rem;
+      opacity: 0.4;
+      transition: opacity 0.2s, color 0.2s;
+    }
+    .receipt-delete-btn:hover {
+      opacity: 1;
+      color: var(--color-accent);
+    }
+
+    /* ══════════════════════════════════════════════════════════
+       النافذة المنبثقة لإضافة معاملة (Modal)
+    ══════════════════════════════════════════════════════════ */
+    .modal-overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(15, 23, 42, 0.45);
+      backdrop-filter: blur(2px);
+      z-index: 150;
+      display: none;
+      align-items: center;
+      justify-content: center;
+      padding: 16px;
+    }
+    .modal-overlay.open { display: flex; }
+    .modal-box {
+      background: var(--color-surface);
+      border: 1px solid var(--color-border);
+      border-radius: var(--radius-lg);
+      padding: 24px;
+      width: 100%;
+      max-width: 400px;
+      box-shadow: var(--shadow-lg);
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+      animation: modalIn 0.2s ease;
+    }
+    @keyframes modalIn {
+      from { transform: scale(0.95); opacity: 0; }
+      to   { transform: scale(1); opacity: 1; }
+    }
+    .modal-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    .modal-header h3 {
+      font-family: var(--font-display);
+      font-size: 1.3rem;
+      color: var(--color-ink);
+    }
+    .modal-close {
+      background: none;
+      border: none;
+      font-size: 1.2rem;
+      cursor: pointer;
+      color: var(--color-ink-muted);
+    }
+    .type-switcher {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px;
+      background: var(--color-bg);
+      padding: 4px;
+      border-radius: var(--radius-sm);
+    }
+    .type-btn {
+      background: none;
+      border: none;
+      padding: 8px;
+      border-radius: 6px;
+      font-family: var(--font-body);
+      font-weight: 700;
+      font-size: 0.85rem;
+      cursor: pointer;
+      color: var(--color-ink-muted);
+      transition: all 0.15s;
+    }
+    .type-btn.active.expense { background: var(--color-accent); color: #fff; }
+    .type-btn.active.income  { background: var(--color-success); color: #fff; }
+
+    /* ══════════════════════════════════════════════════════════
+       شاشة المهام
+    ══════════════════════════════════════════════════════════ */
+    .task-item {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 14px 16px;
+      background: var(--color-surface);
+      border: 1px solid var(--color-border);
+      border-radius: var(--radius-md);
+      margin-bottom: 10px;
+      box-shadow: var(--shadow-sm);
+      transition: opacity var(--transition);
+    }
+    .task-item.done { opacity: 0.45; }
+    .task-check {
+      width: 26px;
+      height: 26px;
+      flex-shrink: 0;
+      border: 2px solid var(--color-border-strong);
+      border-radius: 50%;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: all 0.18s;
+    }
+    .task-check svg { width: 14px; height: 14px; opacity: 0; }
+    .task-item.done .task-check {
+      background: var(--color-success);
+      border-color: var(--color-success);
+    }
+    .task-item.done .task-check svg { opacity: 1; stroke: #fff; }
+    .task-body { flex: 1; }
+    .task-title { font-size: 0.95rem; }
+    .task-item.done .task-title {
+      text-decoration: line-through;
+      color: var(--color-ink-muted);
+    }
+    .task-due {
+      font-size: 0.74rem;
+      color: var(--color-accent);
+      margin-top: 3px;
+    }
+
+    /* ══════════════════════════════════════════════════════════
+       شاشة اليوميات
+    ══════════════════════════════════════════════════════════ */
+    .diary-page {
+      background: var(--color-surface);
+      border: 1px solid var(--color-border);
+      border-radius: var(--radius-md);
+      padding: 18px 20px 18px 24px;
+      margin-bottom: 14px;
+      box-shadow: var(--shadow-sm);
+      position: relative;
+      overflow: hidden;
+    }
+    .diary-page::before {
+      content: '';
+      position: absolute;
+      right: 42px;
+      top: 0;
+      bottom: 0;
+      width: 1.5px;
+      background: rgba(181, 82, 59, 0.22);
+    }
+    .diary-date {
+      font-family: var(--font-display);
+      font-size: 1.05rem;
+      color: var(--color-accent);
+      margin-bottom: 10px;
+    }
+    .diary-content {
+      font-size: 0.92rem;
+      line-height: 1.85;
+      color: var(--color-ink);
+      white-space: pre-wrap;
+    }
+    .mood-badge {
+      display: inline-block;
+      margin-top: 10px;
+      padding: 3px 12px;
+      border-radius: 20px;
+      font-size: 0.78rem;
+      background: var(--color-surface-2);
+      color: var(--color-ink-muted);
+    }
+
+    /* ══════════════════════════════════════════════════════════
+       شريط التنقل السفلي
+    ══════════════════════════════════════════════════════════ */
+    .bottom-nav {
+      display: flex;
+      background: var(--color-surface);
+      border-top: 1px solid var(--color-border);
+      padding-bottom: env(safe-area-inset-bottom, 0px);
+      flex-shrink: 0;
+      z-index: 20;
+    }
+    .nav-btn {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 3px;
+      padding: 9px 4px;
+      border: none;
+      background: none;
+      cursor: pointer;
+      color: var(--color-ink-muted);
+      font-family: var(--font-body);
+      font-size: 0.68rem;
+      transition: color var(--transition);
+    }
+    .nav-btn svg {
+      width: 22px;
+      height: 22px;
+      stroke: currentColor;
+      fill: none;
+      stroke-width: 1.7;
+      stroke-linecap: round;
+      stroke-linejoin: round;
+    }
+    .nav-btn.active { color: var(--color-accent); font-weight: 700; }
+    .nav-btn.active svg { stroke-width: 2.3; }
+
+    /* Empty state & Spinner */
+    .empty-state {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 56px 20px;
+      color: var(--color-ink-muted);
+      gap: 12px;
+    }
+    .empty-state svg {
+      width: 56px;
+      height: 56px;
+      stroke: currentColor;
+      fill: none;
+      stroke-width: 1.2;
+      opacity: 0.35;
+    }
+    .empty-state p {
+      font-size: 0.9rem;
+      text-align: center;
+      line-height: 1.75;
+    }
+    .spinner {
+      width: 28px;
+      height: 28px;
+      border: 3px solid var(--color-border-strong);
+      border-top-color: var(--color-accent);
+      border-radius: 50%;
+      animation: spin 0.65s linear infinite;
+      margin: 40px auto;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    /* Toast */
+    #toast {
+      position: fixed;
+      bottom: 80px;
+      left: 50%;
+      transform: translateX(-50%) translateY(8px);
+      background: var(--color-ink);
+      color: var(--color-bg);
+      padding: 10px 22px;
+      border-radius: 20px;
+      font-size: 0.86rem;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.22s, transform 0.22s;
+      z-index: 999;
+      white-space: nowrap;
+      max-width: 88vw;
+      text-align: center;
+      box-shadow: var(--shadow-md);
+    }
+    #toast.show {
+      opacity: 1;
+      transform: translateX(-50%) translateY(0);
+    }
+  </style>
+</head>
+<body>
+
+<!-- ════════════════════════════════════
+     شاشة تسجيل الدخول
+════════════════════════════════════ -->
+<div id="login-screen">
+  <div class="login-brand">
+    <img src="/brand/logo.png" alt="دفتر">
+    <h1>دفتر</h1>
+    <p>مساعدك الشخصي لإدارة حياتك بالعامية المصرية</p>
+  </div>
+
+  <div class="login-card">
+    <div>
+      <label class="field-label" for="login-email">البريد الإلكتروني</label>
+      <input id="login-email" class="field-input" type="email" placeholder="admin@daftar.app" dir="ltr" autocomplete="email">
+    </div>
+    <div>
+      <label class="field-label" for="login-pass">كلمة المرور</label>
+      <input id="login-pass" class="field-input" type="password" placeholder="••••••••" dir="ltr" autocomplete="current-password">
+    </div>
+    <p id="login-error" class="login-error">البريد أو كلمة المرور غير صحيحة.</p>
+    <button id="login-btn" class="btn-primary">دخول إلى دفتر</button>
+  </div>
+</div>
+
+<!-- ════════════════════════════════════
+     التطبيق الرئيسي
+════════════════════════════════════ -->
+<div id="app">
+
+  <!-- الهيدر العلوي -->
+  <header class="app-header">
+    <div class="header-right">
+      <button class="menu-trigger" id="btn-open-sidebar" aria-label="فتح القائمة الشخصية">
+        <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <line x1="3" y1="12" x2="21" y2="12"></line>
+          <line x1="3" y1="6" x2="21" y2="6"></line>
+          <line x1="3" y1="18" x2="21" y2="18"></line>
+        </svg>
+      </button>
+      <div class="brand-title" onclick="switchScreen('chat')">
+        <img src="/brand/logo.png" alt="دفتر">
+        <span>دفتر</span>
+      </div>
+    </div>
+    <div class="header-left">
+      <button class="icon-btn" id="dark-toggle" aria-label="الوضع الليلي">
+        <svg id="ico-moon" viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/>
+        </svg>
+        <svg id="ico-sun" viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:none">
+          <circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/>
+          <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/>
+          <line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/>
+          <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/>
+        </svg>
+      </button>
+      <button class="icon-btn" id="logout-btn" aria-label="تسجيل الخروج">
+        <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/>
+          <polyline points="16 17 21 12 16 7"/>
+          <line x1="21" y1="12" x2="9" y2="12"/>
+        </svg>
+      </button>
+    </div>
+  </header>
+
+  <!-- الشريط الجانبي (Drawer) لبيانات "مين أنا" -->
+  <div class="sidebar-overlay" id="sidebar-overlay"></div>
+  <aside class="sidebar-drawer" id="sidebar-drawer">
+    <div class="drawer-header">
+      <div class="drawer-user">
+        <div class="drawer-avatar" id="avatar-initial">د</div>
+        <div class="drawer-info">
+          <h3 id="drawer-user-name">صاحب الدفتر</h3>
+          <span class="plan-tag" id="drawer-plan-badge">خطة Pro</span>
+        </div>
+      </div>
+      <button class="drawer-close" id="btn-close-sidebar" aria-label="إغلاق">✕</button>
+    </div>
+
+    <div class="drawer-body">
+      <!-- قسم مين أنا؟ -->
+      <div>
+        <div class="drawer-section-title">
+          <span>👤</span>
+          <span>مين أنا؟ (ملفك الشخصي)</span>
+        </div>
+        <div class="profile-card">
+          <div class="p-field">
+            <label class="p-label" for="prof-name">اسمك / لقبك</label>
+            <input class="p-input" id="prof-name" placeholder="مثلاً: إيهاب">
+          </div>
+          <div class="p-field">
+            <label class="p-label" for="prof-job">طبيعة عملك / نشاطك</label>
+            <input class="p-input" id="prof-job" placeholder="مثلاً: مهندس برمجيات، تاجر...">
+          </div>
+          <div class="p-field">
+            <label class="p-label" for="prof-budget">الميزانية الشهرية المستهدفة (ج.م)</label>
+            <input class="p-input" id="prof-budget" type="number" placeholder="مثلاً: 12000">
+          </div>
+          <div class="p-field">
+            <label class="p-label" for="prof-bio">أولوياتك أو أهدافك</label>
+            <input class="p-input" id="prof-bio" placeholder="مثلاً: التحكم في مصاريف الأكل والتوفير">
+          </div>
+          <button class="btn-save-profile" id="btn-save-profile">حفظ بياناتي</button>
+        </div>
+      </div>
+
+      <!-- إحصائيات سريعة -->
+      <div>
+        <div class="drawer-section-title">
+          <span>📊</span>
+          <span>إحصائيات دفترك</span>
+        </div>
+        <div class="drawer-stats">
+          <div class="stat-box">
+            <div class="s-num" id="stat-expenses-count">0</div>
+            <div class="s-txt">عمليات مسجلة</div>
+          </div>
+          <div class="stat-box">
+            <div class="s-num" id="stat-tasks-count">0</div>
+            <div class="s-txt">مهام مفتوحة</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- إعدادات إشعارات التشيك إن اليومي -->
+      <div>
+        <div class="drawer-section-title">
+          <span>🔔</span>
+          <span>إشعارات التشيك إن اليومي</span>
+        </div>
+        <div class="profile-card" style="display:flex; flex-direction:column; gap:12px;">
+          <div style="display:flex; align-items:center; justify-content:space-between;">
+            <span style="font-size:0.86rem; font-weight:600; color:var(--color-ink);">حالة الإشعارات:</span>
+            <span id="push-status-badge" style="font-size:0.78rem; font-weight:700; padding:3px 10px; border-radius:12px; background:var(--color-surface-2); color:var(--color-ink-muted);">جاري الفحص...</span>
+          </div>
+          <p style="font-size:0.78rem; color:var(--color-ink-muted); margin:0; line-height:1.45;">
+            دفتر هيبعتلك إشعار مسائي يسألك عن مصاريفك ويفكرك بالمهام عشان تظبط يومك قبل ما تنام.
+          </p>
+          <div style="display:flex; gap:8px;">
+            <button class="btn-primary" id="btn-toggle-push" style="flex:1; padding:8px 12px; font-size:0.85rem;">
+              تفعيل الإشعارات
+            </button>
+            <button class="cat-pill" id="btn-test-push" style="padding:8px 12px; font-size:0.82rem;" title="إرسال إشعار تجريبي فوري">
+              تجربة 🔔
+            </button>
+          </div>
+          <button class="cat-pill" id="btn-trigger-checkin" style="padding:7px 10px; font-size:0.8rem; border-style:dashed;" title="تشغيل سؤال التشيك إن اليومي الآن">
+            📝 تشغيل تشيك إن الآن
+          </button>
+        </div>
+      </div>
+    </div>
+  </aside>
+
+  <!-- الشاشات -->
+  <div class="screens">
+
+    <!-- 💬 شاشة الدردشة -->
+    <div id="screen-chat" class="screen active">
+      <div class="messages-area" id="messages-area">
+        <div class="welcome-msg">
+          <img src="/brand/logo.png" alt="">
+          <h2>أهلاً بيك في دفتر!</h2>
+          <p>قولّي عملت إيه النهارده بصوتك أو كتابة،<br>وسيبني أرتب لك المصاريف والمهام واليوميات.</p>
+          <div class="hints">
+            <button class="hint-chip" onclick="useHint(this)">صرفت 50 جنيه على الأكل النهارده</button>
+            <button class="hint-chip" onclick="useHint(this)">فكّرني أكلم الدكتور بكرة</button>
+            <button class="hint-chip" onclick="useHint(this)">انا صرفت كام لحد دلوقتي الشهر ده؟</button>
+            <button class="hint-chip" onclick="useHint(this)">النهارده كان يوم مليان إنجازات ومبسوط</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="input-area">
+        <button class="send-btn" id="send-btn" aria-label="إرسال">
+          <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+            <line x1="12" y1="19" x2="12" y2="5"/><polyline points="5 12 12 5 19 12"/>
+          </svg>
+        </button>
+        <div class="text-wrap">
+          <textarea id="chat-input" placeholder="اكتب لدفتر هنا…" rows="1" autocomplete="off"></textarea>
+        </div>
+        <button class="mic-btn" id="mic-btn" aria-label="تسجيل صوتي">
+          <svg id="mic-icon" viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/>
+            <path d="M19 10v2a7 7 0 0 1-14 0v-2"/>
+            <line x1="12" y1="19" x2="12" y2="23"/>
+            <line x1="8"  y1="23" x2="16" y2="23"/>
+          </svg>
+          <svg id="stop-icon" viewBox="0 0 24 24" width="18" height="18" fill="currentColor" stroke="none" style="display:none">
+            <rect x="4" y="4" width="16" height="16" rx="2"/>
+          </svg>
+        </button>
+      </div>
+    </div>
+
+    <!-- 💸 شاشة المصروفات المعاد تصميمها -->
+    <div id="screen-expenses" class="screen">
+      <div class="expenses-header-row">
+        <h2 class="screen-title">دفتر الحسابات</h2>
+        <button class="btn-quick-add" id="btn-open-add-expense">
+          <span>+ إضافة معاملة</span>
+        </button>
+      </div>
+
+      <!-- بطاقة الملخص المالي الراقي -->
+      <div class="ledger-summary-card">
+        <div class="ledger-grid">
+          <div class="ledger-col">
+            <div class="ledger-label">
+              <span>🔻</span>
+              <span>إجمالي المصروف</span>
+            </div>
+            <div class="ledger-val expense" id="t-expense">—</div>
+          </div>
+          <div class="ledger-col">
+            <div class="ledger-label">
+              <span>🔺</span>
+              <span>إجمالي الدخل</span>
+            </div>
+            <div class="ledger-val income" id="t-income">—</div>
+          </div>
+        </div>
+        <div class="ledger-net-box">
+          <span class="ledger-label">الرصيد الصافي المتبقي:</span>
+          <span class="ledger-net-val" id="t-net">—</span>
+        </div>
+      </div>
+
+      <!-- فلاتر الفئات السريعة -->
+      <div class="category-pills" id="category-pills">
+        <button class="cat-pill active" data-cat="all">الكل</button>
+        <button class="cat-pill" data-cat="أكل">🍔 أكل وشرب</button>
+        <button class="cat-pill" data-cat="مواصلات">🚗 مواصلات</button>
+        <button class="cat-pill" data-cat="فواتير">📃 فواتير</button>
+        <button class="cat-pill" data-cat="تسوق">🛍️ تسوق</button>
+        <button class="cat-pill" data-cat="صحة">💊 صحة</button>
+        <button class="cat-pill" data-cat="تعليم">📚 تعليم</button>
+        <button class="cat-pill" data-cat="راتب">💰 دخل وراتب</button>
+        <button class="cat-pill" data-cat="أخرى">📦 أخرى</button>
+      </div>
+
+      <!-- قائمة الفواتير / الإيصالات الورقية -->
+      <div class="receipt-feed" id="expenses-list">
+        <div class="spinner"></div>
+      </div>
+    </div>
+
+    <!-- ✅ شاشة المهام -->
+    <div id="screen-tasks" class="screen">
+      <div class="expenses-header-row">
+        <h2 class="screen-title">دفتر المهام</h2>
+      </div>
+      <div id="tasks-list"><div class="spinner"></div></div>
+    </div>
+
+    <!-- 📖 شاشة اليوميات -->
+    <div id="screen-diary" class="screen">
+      <div class="expenses-header-row">
+        <h2 class="screen-title">دفتر اليوميات</h2>
+      </div>
+      <div id="diary-list"><div class="spinner"></div></div>
+    </div>
+
+  </div><!-- /screens -->
+
+  <!-- شريط التنقل السفلي -->
+  <nav class="bottom-nav">
+    <button class="nav-btn active" data-screen="chat">
+      <svg viewBox="0 0 24 24"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+      دردشة
+    </button>
+    <button class="nav-btn" data-screen="expenses">
+      <svg viewBox="0 0 24 24"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
+      مصاريف
+    </button>
+    <button class="nav-btn" data-screen="tasks">
+      <svg viewBox="0 0 24 24"><polyline points="9 11 12 14 22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>
+      مهام
+    </button>
+    <button class="nav-btn" data-screen="diary">
+      <svg viewBox="0 0 24 24"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg>
+      يوميات
+    </button>
+  </nav>
+
+</div><!-- /app -->
+
+<!-- ════════════════════════════════════
+     نافذة إضافة معاملة يدوية سريعة (Modal)
+════════════════════════════════════ -->
+<div class="modal-overlay" id="add-expense-modal">
+  <div class="modal-box">
+    <div class="modal-header">
+      <h3>إضافة معاملة جديدة</h3>
+      <button class="modal-close" id="btn-close-modal">✕</button>
+    </div>
+
+    <div class="type-switcher">
+      <button class="type-btn active expense" id="type-opt-expense">مصروف (-)</button>
+      <button class="type-btn income" id="type-opt-income">دخل (+)</button>
+    </div>
+
+    <div>
+      <label class="field-label" for="manual-amount">المبلغ (ج.م)</label>
+      <input class="field-input" id="manual-amount" type="number" step="0.5" placeholder="مثلاً: 120" style="text-align:right;" dir="ltr">
+    </div>
+
+    <div>
+      <label class="field-label" for="manual-category">التصنيف</label>
+      <select class="field-input" id="manual-category" style="direction:rtl; text-align:right;">
+        <option value="أكل">🍔 أكل وشرب</option>
+        <option value="مواصلات">🚗 مواصلات</option>
+        <option value="فواتير">📃 فواتير واشتراكات</option>
+        <option value="تسوق">🛍️ تسوق ومشتريات</option>
+        <option value="صحة">💊 صحة وعلاج</option>
+        <option value="تعليم">📚 كورسات وتعليم</option>
+        <option value="إيجار">🏠 إيجار وسكن</option>
+        <option value="راتب">💰 مرتب / عمل حر</option>
+        <option value="أخرى">📦 أخرى</option>
+      </select>
+    </div>
+
+    <div>
+      <label class="field-label" for="manual-note">ملاحظة أو مكان (اختياري)</label>
+      <input class="field-input" id="manual-note" placeholder="مثلاً: غداء مع صحابي أو بنزين" style="text-align:right;">
+    </div>
+
+    <button class="btn-primary" id="btn-submit-expense">حفظ المعاملة</button>
+  </div>
+</div>
+
+<div id="toast" role="status" aria-live="polite"></div>
+
+<script>
+/* ─────────────────────────────────────────────────────────────
+   الأدوات والتنسيقات
+───────────────────────────────────────────────────────────── */
+const $ = id => document.getElementById(id);
+
+const CAT_EMOJIS = {
+  أكل: '🍔', مواصلات: '🚗', فواتير: '📃', تسوق: '🛍️',
+  صحة: '💊', تعليم: '📚', إيجار: '🏠', راتب: '💰',
+  عمل: '💼', ترفيه: '🎮', أخرى: '📦'
+};
+
+const MOODS = {
+  happy: '😊 سعيد', sad: '😢 حزين', neutral: '😐 عادي',
+  anxious: '😰 قلقان', excited: '🤩 متحمس'
+};
+
+let allExpensesData = [];
+let activeCategoryFilter = 'all';
+
+function fmt(n, cur = 'EGP') {
+  return Number(n).toLocaleString('ar-EG', { minimumFractionDigits: 0, maximumFractionDigits: 2 }) + '\u202f' + cur;
+}
+
+function fmtDate(d) {
+  return new Date(d).toLocaleDateString('ar-EG', {
+    day: 'numeric', month: 'long', year: 'numeric',
+    hour: '2-digit', minute: '2-digit'
+  });
+}
+
+function toast(msg, ms = 2500) {
+  const t = $('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  clearTimeout(t._t);
+  t._t = setTimeout(() => t.classList.remove('show'), ms);
+}
+
+/* ─────────────────────────────────────────────────────────────
+   الملف الشخصي "مين أنا" وإدارة الشريط الجانبي (Sidebar)
+───────────────────────────────────────────────────────────── */
+function loadProfile() {
+  const name   = localStorage.getItem('daftar_name') || 'أدمن دفتر';
+  const job    = localStorage.getItem('daftar_job') || '';
+  const budget = localStorage.getItem('daftar_budget') || '';
+  const bio    = localStorage.getItem('daftar_bio') || '';
+
+  $('prof-name').value   = name;
+  $('prof-job').value    = job;
+  $('prof-budget').value = budget;
+  $('prof-bio').value    = bio;
+
+  $('drawer-user-name').textContent = name;
+  $('avatar-initial').textContent = name.charAt(0) || 'د';
+}
+
+$('btn-save-profile').addEventListener('click', () => {
+  const name   = $('prof-name').value.trim() || 'صاحب الدفتر';
+  const job    = $('prof-job').value.trim();
+  const budget = $('prof-budget').value.trim();
+  const bio    = $('prof-bio').value.trim();
+
+  localStorage.setItem('daftar_name', name);
+  localStorage.setItem('daftar_job', job);
+  localStorage.setItem('daftar_budget', budget);
+  localStorage.setItem('daftar_bio', bio);
+
+  $('drawer-user-name').textContent = name;
+  $('avatar-initial').textContent = name.charAt(0) || 'د';
+  toast('✅ تم حفظ بيانات ملفك الشخصي بنجاح');
+});
+
+// فتح وغلق الـ Drawer
+$('btn-open-sidebar').addEventListener('click', () => {
+  $('sidebar-overlay').classList.add('open');
+  $('sidebar-drawer').classList.add('open');
+});
+function closeSidebar() {
+  $('sidebar-overlay').classList.remove('open');
+  $('sidebar-drawer').classList.remove('open');
+}
+$('btn-close-sidebar').addEventListener('click', closeSidebar);
+$('sidebar-overlay').addEventListener('click', closeSidebar);
+
+/* ─────────────────────────────────────────────────────────────
+   الوضع الداكن / الفاتح
+───────────────────────────────────────────────────────────── */
+function applyDark(on) {
+  document.documentElement.setAttribute('data-dark', on ? 'true' : 'false');
+  $('ico-moon').style.display = on ? 'none' : '';
+  $('ico-sun').style.display  = on ? '' : 'none';
+  $('meta-theme').content     = on ? '#181F2E' : '#1F2A44';
+  localStorage.setItem('daftar-dark', on ? '1' : '0');
+}
+const savedDark = localStorage.getItem('daftar-dark');
+applyDark(savedDark !== null ? savedDark === '1' : window.matchMedia('(prefers-color-scheme:dark)').matches);
+$('dark-toggle').addEventListener('click', () =>
+  applyDark(document.documentElement.getAttribute('data-dark') !== 'true'));
+
+/* ─────────────────────────────────────────────────────────────
+   المصادقة (Auth)
+───────────────────────────────────────────────────────────── */
+async function checkAuth() {
+  try {
+    const r = await fetch('/api/expenses?limit=1');
+    r.status === 401 ? showLogin() : showApp();
+  } catch { showLogin(); }
+}
+function showLogin() {
+  $('login-screen').style.display = 'flex';
+  $('app').style.display = 'none';
+}
+function showApp() {
+  $('login-screen').style.display = 'none';
+  $('app').style.display = 'flex';
+  loadProfile();
+  checkPushSubscription();
+  loadScreen(currentScreen);
+}
+
+$('login-btn').addEventListener('click', async () => {
+  const email = $('login-email').value.trim();
+  const pass  = $('login-pass').value;
+  $('login-error').style.display = 'none';
+  $('login-btn').disabled = true;
+  $('login-btn').textContent = 'جاري الدخول…';
+  try {
+    const r = await fetch('/admin/login', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email, password: pass }),
+    });
+    const d = await r.json();
+    if (d.ok) {
+      if (d.name) localStorage.setItem('daftar_name', d.name);
+      showApp();
+    } else {
+      $('login-error').style.display = 'block';
+    }
+  } catch {
+    $('login-error').style.display = 'block';
+  }
+  $('login-btn').disabled = false;
+  $('login-btn').textContent = 'دخول إلى دفتر';
+});
+
+['login-email', 'login-pass'].forEach(id =>
+  $(id).addEventListener('keydown', e => { if (e.key === 'Enter') $('login-btn').click(); })
+);
+
+$('logout-btn').addEventListener('click', async () => {
+  await fetch('/admin/logout', { method: 'POST' }).catch(() => {});
+  showLogin();
+  toast('تم تسجيل الخروج');
+});
+
+/* ─────────────────────────────────────────────────────────────
+   التنقل بين الشاشات
+───────────────────────────────────────────────────────────── */
+let currentScreen = 'chat';
+document.querySelectorAll('.nav-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    switchScreen(btn.dataset.screen);
+  });
+});
+
+function switchScreen(name) {
+  if (!name) return;
+  currentScreen = name;
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
+  $('screen-' + name)?.classList.add('active');
+  document.querySelector(`.nav-btn[data-screen="${name}"]`)?.classList.add('active');
+  loadScreen(name);
+}
+
+function loadScreen(n) {
+  if (n === 'expenses') loadExpenses();
+  else if (n === 'tasks')  loadTasks();
+  else if (n === 'diary')  loadDiary();
+}
+
+/* ─────────────────────────────────────────────────────────────
+   الدردشة (Chat)
+───────────────────────────────────────────────────────────── */
+function addMsg(role, text) {
+  const area = $('messages-area');
+  area.querySelector('.welcome-msg')?.remove();
+  const div = document.createElement('div');
+  div.className = 'message ' + role;
+  div.textContent = text;
+  area.appendChild(div);
+  area.scrollTop = area.scrollHeight;
+  return div;
+}
+
+function addTyping() {
+  const area = $('messages-area');
+  const div = document.createElement('div');
+  div.className = 'msg-typing';
+  div.innerHTML = '<div class="typing-dots"><span></span><span></span><span></span></div>';
+  area.appendChild(div);
+  area.scrollTop = area.scrollHeight;
+  return div;
+}
+
+async function sendText(text) {
+  text = text.trim();
+  if (!text) return;
+  $('chat-input').value = '';
+  $('chat-input').style.height = 'auto';
+  addMsg('user', text);
+  const typing = addTyping();
+  try {
+    const r = await fetch('/api/chat', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ text }),
+    });
+    const d = await r.json();
+    typing.remove();
+    addMsg('assistant', d.reply || d.error || 'حصل خطأ غير متوقع.');
+    if (d.toolsUsed?.some(t => t.includes('expense'))) loadExpenses();
+    if (d.toolsUsed?.some(t => t.includes('task')))    loadTasks();
+    if (d.toolsUsed?.some(t => t.includes('diary')))   loadDiary();
+  } catch {
+    typing.remove();
+    addMsg('assistant', 'تأكد من الاتصال وحاول مجدداً.');
+  }
+}
+
+$('send-btn').addEventListener('click', () => sendText($('chat-input').value));
+$('chat-input').addEventListener('keydown', e => {
+  if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendText(e.target.value); }
+});
+$('chat-input').addEventListener('input', function() {
+  this.style.height = 'auto';
+  this.style.height = Math.min(this.scrollHeight, 96) + 'px';
+});
+window.useHint = btn => sendText(btn.textContent);
+
+/* تسجيل الصوت بالميكروفون */
+let recording = false, mr = null, chunks = [];
+$('mic-btn').addEventListener('click', async () => {
+  if (!recording) {
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      mr = new MediaRecorder(stream);
+      chunks = [];
+      mr.ondataavailable = e => chunks.push(e.data);
+      mr.onstop = () => {
+        stream.getTracks().forEach(t => t.stop());
+        toast('🎙️ ميزة الصوت ستُربط مع Groq Whisper في خطوة الـ STT');
+      };
+      mr.start();
+      recording = true;
+      $('mic-btn').classList.add('recording');
+      $('mic-icon').style.display  = 'none';
+      $('stop-icon').style.display = '';
+      toast('جاري التسجيل… اضغط مرة أخرى للإيقاف');
+    } catch {
+      toast('يُرجى السماح باستخدام الميكروفون');
+    }
+  } else {
+    mr?.stop();
+    recording = false;
+    $('mic-btn').classList.remove('recording');
+    $('mic-icon').style.display  = '';
+    $('stop-icon').style.display = 'none';
+  }
+});
+
+/* ─────────────────────────────────────────────────────────────
+   شاشة المصروفات (Expenses Ledger)
+───────────────────────────────────────────────────────────── */
+async function loadExpenses() {
+  const list = $('expenses-list');
+  list.innerHTML = '<div class="spinner"></div>';
+  try {
+    const [exp, sum] = await Promise.all([
+      fetch('/api/expenses?limit=50').then(r => r.json()),
+      fetch('/api/expenses/summary').then(r => r.json()),
+    ]);
+
+    const totalExp = sum.totalExpense ?? 0;
+    const totalInc = sum.totalIncome ?? 0;
+    const net = totalInc - totalExp;
+
+    $('t-expense').textContent = fmt(totalExp);
+    $('t-income').textContent  = fmt(totalInc);
+    const netEl = $('t-net');
+    netEl.textContent = (net >= 0 ? '+' : '') + fmt(net);
+    netEl.className   = 'ledger-net-val ' + (net >= 0 ? 'positive' : 'negative');
+
+    allExpensesData = exp.data || [];
+    $('stat-expenses-count').textContent = allExpensesData.length;
+
+    renderReceipts();
+  } catch (err) {
+    console.error(err);
+    list.innerHTML = '<div class="empty-state"><p>خطأ في تحميل المصروفات.</p></div>';
+  }
+}
+
+function renderReceipts() {
+  const list = $('expenses-list');
+  let filtered = allExpensesData;
+  if (activeCategoryFilter !== 'all') {
+    filtered = allExpensesData.filter(e => e.category === activeCategoryFilter);
+  }
+
+  if (!filtered.length) {
+    list.innerHTML = `
+      <div class="empty-state">
+        <svg viewBox="0 0 24 24"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
+        <p>مفيش عمليات مسجلة ${activeCategoryFilter !== 'all' ? 'في التصنيف ده' : 'لسه'}.<br>قول للوكيل أو استخدم زر الإضافة أعلاه!</p>
+      </div>`;
+    return;
+  }
+
+  list.innerHTML = filtered.map(e => `
+    <div class="receipt-item" id="rec-${e.id}">
+      <div class="receipt-tear-top"></div>
+      <div class="receipt-content">
+        <div class="receipt-icon-badge">${CAT_EMOJIS[e.category] || '📦'}</div>
+        <div class="receipt-main">
+          <div class="receipt-row-top">
+            <span class="receipt-category-name">${e.category || 'غير مصنّف'}</span>
+            <span class="receipt-price ${e.type}">
+              ${e.type === 'expense' ? '-' : '+'}${fmt(e.amount, e.currency)}
+            </span>
+          </div>
+          <div class="receipt-row-bottom">
+            <span class="receipt-note-text">${e.note || fmtDate(e.happened_at)}</span>
+            <button class="receipt-delete-btn" onclick="deleteExpense('${e.id}')" title="حذف المعاملة">حذف</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  `).join('');
+}
+
+// فلاتر التصنيفات
+document.querySelectorAll('.cat-pill').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('.cat-pill').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    activeCategoryFilter = btn.dataset.cat;
+    renderReceipts();
+  });
+});
+
+async function deleteExpense(id) {
+  if (!confirm('هل تريد حذف هذه المعاملة؟')) return;
+  try {
+    await fetch(`/api/expenses/${id}`, { method: 'DELETE' });
+    toast('تم حذف المعاملة');
+    loadExpenses();
+  } catch {
+    toast('خطأ أثناء الحذف');
+  }
+}
+window.deleteExpense = deleteExpense;
+
+/* نافذة إضافة معاملة يدوية */
+let manualType = 'expense';
+$('btn-open-add-expense').addEventListener('click', () => {
+  $('add-expense-modal').classList.add('open');
+});
+$('btn-close-modal').addEventListener('click', () => {
+  $('add-expense-modal').classList.remove('open');
+});
+
+$('type-opt-expense').addEventListener('click', () => {
+  manualType = 'expense';
+  $('type-opt-expense').classList.add('active');
+  $('type-opt-income').classList.remove('active');
+});
+$('type-opt-income').addEventListener('click', () => {
+  manualType = 'income';
+  $('type-opt-income').classList.add('active');
+  $('type-opt-expense').classList.remove('active');
+});
+
+$('btn-submit-expense').addEventListener('click', async () => {
+  const amount = Number($('manual-amount').value);
+  if (!amount || amount <= 0) {
+    alert('يرجى إدخال مبلغ صحيح.');
+    return;
+  }
+  const category = $('manual-category').value;
+  const note = $('manual-note').value.trim();
+
+  $('btn-submit-expense').disabled = true;
+  $('btn-submit-expense').textContent = 'جاري الحفظ…';
+
+  try {
+    const r = await fetch('/api/expenses', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ amount, type: manualType, category, note })
+    });
+    const d = await r.json();
+    if (d.ok) {
+      toast('✅ تم تسجيل المعاملة بنجاح');
+      $('manual-amount').value = '';
+      $('manual-note').value = '';
+      $('add-expense-modal').classList.remove('open');
+      loadExpenses();
+    } else {
+      toast('خطأ في الحفظ');
+    }
+  } catch {
+    toast('خطأ في الاتصال');
+  }
+  $('btn-submit-expense').disabled = false;
+  $('btn-submit-expense').textContent = 'حفظ المعاملة';
+});
+
+/* ─────────────────────────────────────────────────────────────
+   شاشة المهام (Tasks)
+───────────────────────────────────────────────────────────── */
+async function loadTasks() {
+  const list = $('tasks-list');
+  list.innerHTML = '<div class="spinner"></div>';
+  try {
+    const r = await fetch('/api/tasks').then(r => r.json());
+    if (!r.data?.length) {
+      list.innerHTML = `
+        <div class="empty-state">
+          <svg viewBox="0 0 24 24"><polyline points="9 11 12 14 22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>
+          <p>مفيش مهام مفتوحة حالياً.<br>قول للوكيل: فكّرني أعمل حاجة!</p>
+        </div>`;
+      $('stat-tasks-count').textContent = '0';
+      return;
+    }
+    $('stat-tasks-count').textContent = r.data.filter(t => !t.done).length;
+    list.innerHTML = r.data.map(t => `
+      <div class="task-item ${t.done ? 'done' : ''}" id="task-${t.id}">
+        <div class="task-check" onclick="completeTask('${t.id}')">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
+            <polyline points="20 6 9 17 4 12"/>
+          </svg>
+        </div>
+        <div class="task-body">
+          <div class="task-title">${t.title}</div>
+          ${t.due_at ? `<div class="task-due">📅 ${fmtDate(t.due_at)}</div>` : ''}
+        </div>
+      </div>
+    `).join('');
+  } catch {
+    list.innerHTML = '<div class="empty-state"><p>خطأ في تحميل المهام.</p></div>';
+  }
+}
+
+async function completeTask(id) {
+  const item = $('task-' + id);
+  if (!item || item.classList.contains('done')) return;
+  item.classList.add('done');
+  try {
+    await fetch(`/api/tasks/${id}/complete`, { method: 'PATCH' });
+    toast('✅ تم إتمام المهمة');
+  } catch {
+    toast('خطأ في تحديث المهمة');
+  }
+}
+window.completeTask = completeTask;
+
+/* ─────────────────────────────────────────────────────────────
+   شاشة اليوميات (Diary)
+───────────────────────────────────────────────────────────── */
+async function loadDiary() {
+  const list = $('diary-list');
+  list.innerHTML = '<div class="spinner"></div>';
+  try {
+    const r = await fetch('/api/diary?limit=14').then(r => r.json());
+    if (!r.data?.length) {
+      list.innerHTML = `
+        <div class="empty-state">
+          <svg viewBox="0 0 24 24"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg>
+          <p>مفيش يوميات مسجلة لسه.<br>احكيلي عن يومك أو اكتب مذكراتك!</p>
+        </div>`;
+      return;
+    }
+    list.innerHTML = r.data.map(d => `
+      <div class="diary-page">
+        <div class="diary-date">${fmtDate(d.day)}</div>
+        <div class="diary-content">${d.content}</div>
+        ${d.mood ? `<span class="mood-badge">${MOODS[d.mood] ?? d.mood}</span>` : ''}
+      </div>
+    `).join('');
+  } catch {
+    list.innerHTML = '<div class="empty-state"><p>خطأ في تحميل اليوميات.</p></div>';
+  }
+}
+
+/* ─────────────────────────────────────────────────────────────
+   PWA Service Worker & Web Push Notifications
+───────────────────────────────────────────────────────────── */
+function urlBase64ToUint8Array(base64String) {
+  const padding = '='.repeat((4 - base64String.length % 4) % 4);
+  const base64 = (base64String + padding).replace(/\-/g, '+').replace(/_/g, '/');
+  const rawData = window.atob(base64);
+  const outputArray = new Uint8Array(rawData.length);
+  for (let i = 0; i < rawData.length; ++i) {
+    outputArray[i] = rawData.charCodeAt(i);
+  }
+  return outputArray;
+}
+
+let swRegistration = null;
+
+if ('serviceWorker' in navigator) {
+  navigator.serviceWorker.register('/sw.js').then(reg => {
+    swRegistration = reg;
+  }).catch(() => {});
+}
+
+async function checkPushSubscription() {
+  const badge = $('push-status-badge');
+  const btnToggle = $('btn-toggle-push');
+  if (!badge || !btnToggle) return;
+
+  if (!('serviceWorker' in navigator) || !('PushManager' in window)) {
+    badge.textContent = 'غير مدعومة';
+    badge.style.background = 'var(--color-surface-2)';
+    btnToggle.disabled = true;
+    btnToggle.textContent = 'غير متاحة بالمتصفح';
+    return;
+  }
+
+  try {
+    const reg = swRegistration || await navigator.serviceWorker.ready;
+    const sub = await reg.pushManager.getSubscription();
+
+    if (sub) {
+      badge.textContent = 'مفعلة 🟢';
+      badge.style.background = 'rgba(74, 124, 89, 0.15)';
+      badge.style.color = 'var(--color-success)';
+      btnToggle.textContent = 'إيقاف الإشعارات';
+      btnToggle.classList.remove('btn-primary');
+      btnToggle.classList.add('cat-pill');
+    } else {
+      badge.textContent = 'غير مفعلة ⚪';
+      badge.style.background = 'var(--color-surface-2)';
+      badge.style.color = 'var(--color-ink-muted)';
+      btnToggle.textContent = 'تفعيل الإشعارات';
+      btnToggle.classList.remove('cat-pill');
+      btnToggle.classList.add('btn-primary');
+    }
+  } catch (err) {
+    console.error('Push check error:', err);
+  }
+}
+
+async function togglePushSubscription() {
+  const btnToggle = $('btn-toggle-push');
+  if (!('serviceWorker' in navigator) || !('PushManager' in window)) {
+    toast('متصفحك لا يدعم إشعارات الويب.');
+    return;
+  }
+
+  btnToggle.disabled = true;
+  try {
+    const reg = swRegistration || await navigator.serviceWorker.ready;
+    const existing = await reg.pushManager.getSubscription();
+
+    if (existing) {
+      await existing.unsubscribe();
+      await fetch('/api/push/unsubscribe', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ endpoint: existing.endpoint }),
+      });
+      toast('تم إيقاف الإشعارات على هذا الجهاز.');
+    } else {
+      const permission = await Notification.requestPermission();
+      if (permission !== 'granted') {
+        toast('⚠️ تم رفض إذن الإشعارات من المتصفح.');
+        btnToggle.disabled = false;
+        return;
+      }
+
+      const res = await fetch('/api/push/public-key').then(r => r.json());
+      if (!res.publicKey) {
+        toast('خطأ: مفتاح VAPID غير مضبوط بالخادم.');
+        btnToggle.disabled = false;
+        return;
+      }
+
+      const subscription = await reg.pushManager.subscribe({
+        userVisibleOnly: true,
+        applicationServerKey: urlBase64ToUint8Array(res.publicKey),
+      });
+
+      await fetch('/api/push/subscribe', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ subscription }),
+      });
+
+      toast('🔔 تم تفعيل إشعارات دفتر بنجاح!');
+    }
+  } catch (err) {
+    console.error('Push toggle failed:', err);
+    toast('تعذر تحديث إعدادات الإشعارات: ' + err.message);
+  } finally {
+    btnToggle.disabled = false;
+    await checkPushSubscription();
+  }
+}
+
+async function testPushNotification() {
+  const btnTest = $('btn-test-push');
+  btnTest.disabled = true;
+  try {
+    const r = await fetch('/api/push/test', { method: 'POST' }).then(r => r.json());
+    if (r.ok) {
+      toast('🔔 ' + r.message);
+    } else {
+      toast('⚠️ ' + (r.error || 'تعذر الإرسال.'));
+    }
+  } catch {
+    toast('خطأ في الاتصال بالخادم.');
+  } finally {
+    btnTest.disabled = false;
+  }
+}
+
+async function triggerDailyCheckinNow() {
+  const btn = $('btn-trigger-checkin');
+  btn.disabled = true;
+  btn.textContent = 'جاري الإطلاق... ⏳';
+  try {
+    const r = await fetch('/api/push/checkin-trigger', { method: 'POST' }).then(r => r.json());
+    if (r.ok) {
+      toast('📝 تم إطلاق التشيك إن! تفقد المحادثة.');
+      if ($('btn-close-sidebar')) $('btn-close-sidebar').click();
+      switchScreen('chat');
+    } else {
+      toast('⚠️ ' + (r.error || 'تعذر تشغيل التشيك إن.'));
+    }
+  } catch {
+    toast('خطأ في الاتصال بالخادم.');
+  } finally {
+    btn.disabled = false;
+    btn.textContent = '📝 تشغيل تشيك إن الآن';
+  }
+}
+
+if ($('btn-toggle-push')) $('btn-toggle-push').onclick = togglePushSubscription;
+if ($('btn-test-push')) $('btn-test-push').onclick = testPushNotification;
+if ($('btn-trigger-checkin')) $('btn-trigger-checkin').onclick = triggerDailyCheckinNow;
+
+checkAuth();
+</script>
+</body>
+</html>
