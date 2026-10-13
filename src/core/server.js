@@ -107,8 +107,20 @@ app.use('/api/chat', chatRouter);
     console.error('[server] Initial migration warning:', migErr.message);
   }
 
-  await loadModules(app);
-  startScheduler();
+  // Each init step is isolated so a failure can never prevent app.listen().
+  // Railway must always get a listening process for its /health check;
+  // without this, a single broken module reports as CRASHED/Completed.
+  try {
+    await loadModules(app);
+  } catch (modErr) {
+    console.error('[server] Module loading failed – continuing in degraded mode:', modErr);
+  }
+
+  try {
+    startScheduler();
+  } catch (schedErr) {
+    console.error('[server] Scheduler failed to start:', schedErr.message);
+  }
 
   // ─── Static frontend (added in Step 1.4) ─────────────────────────────────────
   app.use(express.static(join(__dirname, '../../public')));
