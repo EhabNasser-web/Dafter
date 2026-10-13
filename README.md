@@ -151,6 +151,63 @@ npm run test-push
 
 ---
 
-*الخطوة التالية: 1.6 – نشر التطبيق على Railway والتحقق النهائي*
+## Phase 1 · Step 1.6 – Production Deployment (Railway) & Verification
+
+### ما اتبنى
+
+| الملف | الغرض |
+|---|---|
+| `railway.json` | ضبط النشر التلقائي وتشغيل الميجريشن والفحص الصحي `/health` على Railway |
+| `Dockerfile` & `.dockerignore` | حاوية إنتاجية مبسطة (Node 20 Alpine) للنشر على أي منصة سحابية |
+| `scripts/verify-deployment.js` | سكربت التحقق الشامل قبل النشر (بيئة، جداول، ذكاء اصطناعي، أصول PWA) |
+| `scripts/backup-db.js` | سكربت أخذ نسخة احتياطية من جداول قاعدة البيانات بصيغة JSON |
+
+### أوامر التحقق والنسخ الاحتياطي
+
+```bash
+# فحص الجاهزية للنشر بنسبة 100%
+npm run verify
+
+# أخذ نسخة احتياطية محلية من قاعدة البيانات
+npm run backup-db
+```
+
+### خطوات النشر على Railway
+
+1. **ارفع الكود إلى مستودع GitHub:**
+   ```bash
+   git remote add origin https://github.com/<YOUR_USER>/daftar.git
+   git branch -M main
+   git push -u origin main
+   ```
+
+2. **أنشئ مشروع جديد على Railway:**
+   - افتح [railway.app](https://railway.app)
+   - اختر **New Project** → **Deploy from GitHub repo**
+   - اختر مستودع `daftar`
+
+3. **أضف المتغيرات في لوحة تحكم Railway (Variables):**
+
+   | المتغير | القيمة |
+   |---|---|
+   | `NODE_ENV` | `production` |
+   | `DATABASE_URL` | رابط Supabase Session Pooler |
+   | `SESSION_SECRET` | نص عشوائي طويل وآمن |
+   | `ADMIN_EMAIL` | بريد حساب الأدمن |
+   | `ADMIN_PASSWORD` | كلمة مرور قوية للأدمن |
+   | `GROQ_API_KEY` | مفتاح Groq API |
+   | `GOOGLE_API_KEY` | مفتاح Google Gemini API |
+   | `GROQ_MODEL` | `openai/gpt-oss-120b` |
+   | `GEMINI_MODEL` | `gemini-3.8-flash` |
+   | `VAPID_PUBLIC_KEY` | المفتاح العام المولد في `.env` |
+   | `VAPID_PRIVATE_KEY` | المفتاح السري المولد في `.env` |
+   | `VAPID_SUBJECT` | `mailto:admin@daftar.app` |
+
+4. **التحقق والتأكد:**
+   - السيرفر هيشغل الميجريشن تلقائياً بفضل `railway.json`.
+   - افحص الـ Deployment Logs للتأكد من ظهور رسالة:
+     `🚀 Daftar – http://localhost:PORT [production]`
+   - افتح رابط الدومين المخصص لك من Railway واستمتع بـ **دفتر** كـ Daily Driver!
+
 
 
