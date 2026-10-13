@@ -28,6 +28,16 @@ const __dirname = dirname(fileURLToPath(import.meta.url));
 const app = express();
 const PORT = process.env.PORT || 3000;
 
+// Trust Railway proxy (essential for rate limiting & secure cookies)
+app.set('trust proxy', 1);
+
+process.on('uncaughtException', err => {
+  console.error('💥 [server] Uncaught Exception:', err);
+});
+process.on('unhandledRejection', (reason, promise) => {
+  console.error('💥 [server] Unhandled Rejection at:', promise, 'reason:', reason);
+});
+
 // ─── Body parsers ─────────────────────────────────────────────────────────────
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
