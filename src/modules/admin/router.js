@@ -41,15 +41,17 @@ adminRouter.post('/login', async (req, res) => {
       return res.status(401).json({ error: 'بيانات الدخول غير صحيحة.' });
     }
 
-    if (user.role !== 'admin') {
-      return res.status(403).json({ error: 'هذا المسار للمسؤولين فقط.' });
+    // Any active user may log in (admin creates accounts; public signup lands in Phase 2).
+    // Admin-only gates stay on the user-management routes below via requireAdmin.
+    if (user.status !== 'active') {
+      return res.status(403).json({ error: 'حسابك غير مفعّل حالياً. تواصل مع الإدارة.' });
     }
 
     req.session.userId = user.id;
     req.session.role = user.role;
     req.session.userPlan = user.plan ?? 'free';
 
-    return res.json({ ok: true, name: user.name });
+    return res.json({ ok: true, name: user.name, role: user.role, plan: user.plan ?? 'free' });
   } catch (err) {
     console.error('[admin/login]', err);
     return res.status(500).json({ error: 'خطأ في الخادم.' });

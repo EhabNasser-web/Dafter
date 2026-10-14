@@ -1538,6 +1538,9 @@ function showApp() {
   $('login-screen').style.display = 'none';
   $('app').style.display = 'flex';
   loadProfile();
+  const plan = localStorage.getItem('daftar_plan') || 'free';
+  const badge = $('drawer-plan-badge');
+  if (badge) badge.textContent = plan === 'pro' ? 'خطة Pro' : 'خطة مجانية';
   checkPushSubscription();
   loadScreen(currentScreen);
 }
@@ -1557,8 +1560,11 @@ $('login-btn').addEventListener('click', async () => {
     const d = await r.json();
     if (d.ok) {
       if (d.name) localStorage.setItem('daftar_name', d.name);
+      if (d.role) localStorage.setItem('daftar_role', d.role);
+      if (d.plan) localStorage.setItem('daftar_plan', d.plan);
       showApp();
     } else {
+      $('login-error').textContent = d.error || 'البريد أو كلمة المرور غير صحيحة.';
       $('login-error').style.display = 'block';
     }
   } catch {
