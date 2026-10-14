@@ -1678,9 +1678,34 @@ $('mic-btn').addEventListener('click', async () => {
       mr = new MediaRecorder(stream);
       chunks = [];
       mr.ondataavailable = e => chunks.push(e.data);
-      mr.onstop = () => {
+      mr.onstop = async () => {
         stream.getTracks().forEach(t => t.stop());
-        toast('🎙️ ميزة الصوت ستُربط مع Groq Whisper في خطوة الـ STT');
+        const blob = new Blob(chunks, { type: mr.mimeType || 'audio/webm' });
+        chunks = [];
+        if (!blob.size) {
+          toast('التسجيل فاضي، جرّب تاني.');
+          return;
+        }
+        const typing = addTyping();
+        try {
+          const fd = new FormData();
+          fd.append('audio', blob, 'voice.webm');
+          const r = await fetch('/api/voice', { method: 'POST', body: fd });
+          const d = await r.json();
+          typing.remove();
+          if (!r.ok || d.error) {
+            addMsg('assistant', d.error || 'حصل خطأ في معالجة الصوت.');
+            return;
+          }
+          addMsg('user', '🎙️ ' + (d.transcript || 'رسالة صوتية'));
+          addMsg('assistant', d.reply || 'حصل خطأ غير متوقع.');
+          if (d.toolsUsed?.some(t => t.includes('expense'))) loadExpenses();
+          if (d.toolsUsed?.some(t => t.includes('task')))    loadTasks();
+          if (d.toolsUsed?.some(t => t.includes('diary')))   loadDiary();
+        } catch {
+          typing.remove();
+          addMsg('assistant', 'تأكد من الاتصال وحاول مجدداً.');
+        }
       };
       mr.start();
       recording = true;

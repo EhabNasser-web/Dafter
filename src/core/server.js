@@ -69,6 +69,13 @@ const chatLimiter = rateLimit({
 });
 app.use('/api/chat', chatLimiter);
 
+const voiceLimiter = rateLimit({
+  windowMs: 60 * 1000,
+  max: 10,
+  message: { error: 'كثير من الرسائل الصوتية، انتظر قليلاً.' },
+});
+app.use('/api/voice', voiceLimiter);
+
 // ─── Session ──────────────────────────────────────────────────────────────────
 
 if (!process.env.SESSION_SECRET) {
