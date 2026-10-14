@@ -57,6 +57,6 @@ export async function reviewWithGemini(rawTranscript) {
       const corrected = result.response.text().trim();
       return corrected || rawTranscript; // fall back to original if response is empty
     },
-    { label: 'gemini-reviewer', attempts: 3, baseMs: 800, timeoutMs: 20_000 }
+    { label: 'gemini-reviewer', attempts: 2, baseMs: 800, timeoutMs: 12_000 }
   );
 }

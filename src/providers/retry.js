@@ -18,6 +18,17 @@ export async function withRetry(fn, {
 } = {}) {
   let lastErr;
 
+  // Client errors (400-499 except 429 rate-limit and 408 timeout) will never
+  // succeed on retry (bad key, unknown model, bad input) – fail immediately
+  // instead of burning `attempts` × `timeoutMs` of the user's time.
+  const isRetryable = (err) => {
+    const status = err?.status;
+    if (typeof status === 'number' && status >= 400 && status < 500 && status !== 429 && status !== 408) {
+      return false;
+    }
+    return true;
+  };
+
   for (let attempt = 1; attempt <= attempts; attempt++) {
     try {
       // Wrap each call in a timeout race
@@ -31,11 +42,15 @@ export async function withRetry(fn, {
     } catch (err) {
       lastErr = err;
 
+      if (!isRetryable(err)) {
+        console.warn(`[${label}] Non-retryable error (attempt ${attempt}/${attempts}): ${err.message}. Not retrying.`);
+        break;
+      }
+
       const isRateLimit =
         err?.status === 429 ||
         err?.error?.type === 'tokens' ||
-        err?.message?.includes('rate') ||
-        err?.message?.includes('429');
+        /rate[_\s-]?limit|too many requests|\b429\b/i.test(err?.message ?? '');
 
       if (isRateLimit) {
         // Rate limit: use longer backoff
@@ -52,7 +67,7 @@ export async function withRetry(fn, {
 
   // All attempts failed – throw a friendly error
   const isRateLimit =
-    lastErr?.status === 429 || lastErr?.message?.includes('rate') || lastErr?.message?.includes('429');
+    lastErr?.status === 429 || /rate[_\s-]?limit|too many requests|\b429\b/i.test(lastErr?.message ?? '');
 
   if (isRateLimit) {
     throw Object.assign(

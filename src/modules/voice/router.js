@@ -72,9 +72,13 @@ router.post('/', requireAuth, handleUpload, async (req, res) => {
 
     // 2. Review/correct the transcript (skipped on free plan to save cost)
     let text = rawText;
+    console.log(`[voice] raw transcript (${durationSeconds ?? 0}s): ${rawText.slice(0, 200)}`);
     try {
       const reviewer = getReviewerProvider({ bypass: !plan.use_reviewer });
       text = await reviewer(rawText);
+      if (text !== rawText) {
+        console.log(`[voice] reviewed transcript: ${text.slice(0, 200)}`);
+      }
     } catch (revErr) {
       console.error('[voice] Reviewer failed, continuing with raw transcript:', revErr.message);
     }
