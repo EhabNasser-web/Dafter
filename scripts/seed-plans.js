@@ -10,7 +10,7 @@ import { db, pool } from '../src/db/index.js';
 import { users } from '../src/db/schema.js';
 import { plans } from '../config/plans.js';
 
-const VALID_THEMES = ['notebook', 'stickers'];
+const VALID_THEMES = ['notebook', 'contrast'];
 const VALID_STATUS = ['active', 'pending', 'expired', 'disabled'];
 
 const rows = await db.select().from(users);

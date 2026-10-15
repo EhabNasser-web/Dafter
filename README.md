@@ -302,7 +302,7 @@ npm run backup-db
 
 | الملف | الغرض |
 |---|---|
-| `public/themes/stickers.css` | ثيم الستيكرز (Pro فقط) + وضع داكن خاص به |
+| `public/themes/contrast.css` | ثيم التباين العالي (Pro فقط) + وضع داكن خاص به |
 | `config/plans.js` | `themes` لكل خطة (المجانية دفتر فقط) |
 | `src/modules/auth/router.js` | `PATCH /api/auth/profile` (الاسم + ثيم مقيد بالخطة) و`/me` يرجع الثيم |
 | `public/index.html` | مبدل الثيم في الدرج + مجموعة أيقونات لكل ثيم + تطبيق مبكر بدون وميض |

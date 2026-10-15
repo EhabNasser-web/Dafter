@@ -1319,10 +1319,10 @@
         <div class="profile-card" style="gap:10px;">
           <div style="display:flex; gap:8px;">
             <button class="cat-pill" id="theme-notebook" style="flex:1; padding:8px; font-size:0.82rem;">📓 دفتر</button>
-            <button class="cat-pill" id="theme-stickers" style="flex:1; padding:8px; font-size:0.82rem;">🌟 ستيكرز</button>
+            <button class="cat-pill" id="theme-contrast" style="flex:1; padding:8px; font-size:0.82rem;">🔳 تباين عالٍ</button>
           </div>
           <p id="theme-lock-note" style="display:none; font-size:0.76rem; color:var(--color-ink-muted); margin:0;">
-            ثيم الستيكرز حصري لخطة Pro — اطلبه من قسم الاشتراك.
+            ثيم التباين العالي حصري لخطة Pro — اطلبه من قسم الاشتراك.
           </p>
         </div>
       </div>
@@ -1589,14 +1589,10 @@ const CAT_EMOJIS = {
   عمل: '💼', ترفيه: '🎮', أخرى: '📦'
 };
 
-/* Phase 2.5 – icon set per theme (stickers uses a chunkier sticker style) */
+/* Phase 2.5 – icon set per theme (contrast reuses the clear notebook set) */
 const THEME_ICONS = {
   notebook: CAT_EMOJIS,
-  stickers: {
-    أكل: '🍕', مواصلات: '🛵', فواتير: '🧾', تسوق: '🎁',
-    صحة: '🩺', تعليم: '🎓', إيجار: '🏡', راتب: '💸',
-    عمل: '👔', ترفيه: '🎪', أخرى: '⭐'
-  },
+  contrast: CAT_EMOJIS,
 };
 function catEmoji(cat) {
   const theme = document.documentElement.getAttribute('data-theme') || 'notebook';
@@ -1733,7 +1729,7 @@ async function refreshSession() {
     if (me?.plan) localStorage.setItem('daftar_plan', me.plan);
     const badge = $('drawer-plan-badge');
     if (badge) badge.textContent = (me?.plan === 'pro') ? 'خطة Pro' : 'خطة مجانية';
-    if (me?.theme && (me.theme === 'notebook' || me.theme === 'stickers')) {
+    if (me?.theme && (me.theme === 'notebook' || me.theme === 'contrast')) {
       await applyTheme(me.theme, { persist: false });
     } else {
       paintThemeButtons(currentTheme());
@@ -2412,13 +2408,13 @@ $('btn-weekly-summary')?.addEventListener('click', async () => {
 $('btn-export-json')?.addEventListener('click', () => { window.location = '/api/export/json'; });
 $('btn-export-csv')?.addEventListener('click', () => { window.location = '/api/export/expenses.csv'; });
 
-/* ─── Phase 2.5: themes (notebook free, stickers pro) ─── */
+/* ─── Phase 2.5: themes (notebook free, contrast pro) ─── */
 function currentTheme() {
   return document.documentElement.getAttribute('data-theme') || 'notebook';
 }
 function paintThemeButtons(active) {
   $('theme-notebook')?.classList.toggle('active', active === 'notebook');
-  $('theme-stickers')?.classList.toggle('active', active === 'stickers');
+  $('theme-contrast')?.classList.toggle('active', active === 'contrast');
 }
 async function applyTheme(name, { persist = true } = {}) {
   document.documentElement.setAttribute('data-theme', name);
@@ -2446,24 +2442,23 @@ async function applyTheme(name, { persist = true } = {}) {
   return true;
 }
 $('theme-notebook')?.addEventListener('click', () => applyTheme('notebook'));
-$('theme-stickers')?.addEventListener('click', async () => {
+$('theme-contrast')?.addEventListener('click', async () => {
   const plan = localStorage.getItem('daftar_plan');
   if (plan !== 'pro' && localStorage.getItem('daftar_role') !== 'admin') {
     $('theme-lock-note').style.display = '';
-    toast('ثيم الستيكرز لخطة Pro.');
+    toast('ثيم التباين العالي لخطة Pro.');
     return;
   }
   $('theme-lock-note').style.display = 'none';
-  applyTheme('stickers');
+  applyTheme('contrast');
 });
 // Early theme (before login, from cache) to avoid flash
 (function () {
   const cached = localStorage.getItem('daftar_theme');
-  if (cached === 'stickers' || cached === 'notebook') {
-    document.documentElement.setAttribute('data-theme', cached);
-    document.getElementById('theme-css').href = `/themes/${cached}.css`;
-    if (cached === 'stickers') paintThemeButtons('stickers');
-  }
+  const valid = cached === 'contrast' ? 'contrast' : 'notebook';
+  document.documentElement.setAttribute('data-theme', valid);
+  document.getElementById('theme-css').href = `/themes/${valid}.css`;
+  paintThemeButtons(valid);
 })();
 
 /* ─── Phase 2.4: delete my data (double confirm + password) ─── */

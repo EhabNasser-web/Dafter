@@ -1,0 +1,63 @@
+/* =============================================================
+   public/themes/contrast.css
+   ثيم التباين العالي (Pro فقط) – وضوح قصوى: نص أسود خالص على
+   أبيض خالص، حدود سميكة، تركيز عالٍ، بدون زخرفة.
+   يُفعَّل بوضع data-theme="contrast" على عنصر <html>.
+   نفس متغيرات notebook.css – لا CSS للمكونات هنا.
+   ============================================================= */
+
+[data-theme="contrast"] {
+  /* ─── ألوان أساسية ──────────────────────────────────────────── */
+  --color-bg:            #FFFFFF;   /* أبيض خالص */
+  --color-surface:       #FFFFFF;
+  --color-surface-2:     #F0F0F0;
+  --color-ink:           #000000;   /* أسود خالص */
+  --color-ink-light:     #1A1A1A;
+  --color-ink-muted:     #4D4D4D;
+  --color-accent:        #B30000;   /* أحمر داكن عالي التباين */
+  --color-accent-dark:   #7A0000;
+  --color-success:       #005C00;
+
+  /* ─── حدود ───────────────────────────────────────────────────── */
+  --color-border:        rgba(0, 0, 0, 0.55);
+  --color-border-strong: #000000;
+
+  /* ─── خطوط ───────────────────────────────────────────────────── */
+  --font-display: 'Reem Kufi', 'Aref Ruqaa', Georgia, serif;
+  --font-body:    'Cairo', 'Segoe UI', system-ui, sans-serif;
+
+  /* ─── ظلال (معدومة – الوضوح من الحدود) ───────────────────────── */
+  --shadow-sm: none;
+  --shadow-md: none;
+  --shadow-lg: none;
+
+  /* ─── زوايا وانتقالات ─────────────────────────────────────────── */
+  --radius-sm: 4px;
+  --radius-md: 6px;
+  --radius-lg: 8px;
+  --transition: 0.1s ease;
+
+  /* ─── زر الميكروفون ───────────────────────────────────────────── */
+  --mic-size:  72px;
+  --mic-color: var(--color-accent);
+  --mic-ring:  rgba(179, 0, 0, 0.30);
+}
+
+/* ─── الوضع الداكن: أبيض على أسود + أصفر للتركيز ────────────── */
+[data-theme="contrast"][data-dark="true"],
+[data-theme="contrast"].dark {
+  --color-bg:            #000000;
+  --color-surface:       #000000;
+  --color-surface-2:     #1A1A1A;
+  --color-ink:           #FFFFFF;
+  --color-ink-light:     #F0F0F0;
+  --color-ink-muted:     #CFCFCF;
+  --color-accent:        #FFD60A;
+  --color-accent-dark:   #FFC300;
+  --color-success:       #4DFF7A;
+  --color-border:        rgba(255, 255, 255, 0.65);
+  --color-border-strong: #FFFFFF;
+  --shadow-sm: none;
+  --shadow-md: none;
+  --shadow-lg: none;
+}

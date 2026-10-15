@@ -51,7 +51,7 @@ export const plans = {
       reminders: true,
       export: true,
     },
-    themes: ['notebook', 'stickers'],
+    themes: ['notebook', 'contrast'],
   },
 };
 
