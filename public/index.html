@@ -1263,10 +1263,10 @@
       <div id="subscribe-box" style="display:none;">
         <div class="drawer-section-title">
           <span>💳</span>
-          <span>الاشتراك</span>
+          <span id="subscribe-title">الاشتراك</span>
         </div>
         <div class="profile-card" style="gap:10px;">
-          <p style="font-size:0.8rem; color:var(--color-ink-muted); margin:0; line-height:1.6;">
+          <p id="subscribe-desc" style="font-size:0.8rem; color:var(--color-ink-muted); margin:0; line-height:1.6;">
             للترقية إلى Pro تواصل معنا عبر واتساب وسيتم تفعيل حسابك يدوياً.
           </p>
           <button class="btn-primary" id="btn-subscribe" style="padding:9px; font-size:0.86rem;">
@@ -1669,18 +1669,24 @@ async function refreshSession() {
   } catch { /* keep cached values on failure */ }
 }
 
-/** WhatsApp subscription button: free-plan users only, hidden otherwise. */
+/** WhatsApp box: hidden for admins; tailored wording per plan. */
 async function setupSubscribeButton() {
   try {
     const role = localStorage.getItem('daftar_role');
+    if (role === 'admin') return; // admins manage subscriptions, never request them
     const plan = localStorage.getItem('daftar_plan');
-    if (role === 'admin' || plan === 'pro') return; // nothing to subscribe to
     const cfg = await fetch('/api/auth/config').then(r => r.json());
     if (!cfg?.whatsappNumber) return;
+    if (plan === 'pro') {
+      $('subscribe-title').textContent = 'إدارة اشتراكك';
+      $('subscribe-desc').textContent = 'لتمديد مدة اشتراكك الحالي أو الانتقال إلى باقة أعلى، تواصل معنا عبر واتساب وسيتم تنفيذ طلبك يدوياً.';
+      $('btn-subscribe').textContent = 'تمديد أو ترقية عبر واتساب';
+    }
     $('subscribe-box').style.display = '';
     $('btn-subscribe').onclick = () => {
       const email = localStorage.getItem('daftar_email') || '';
-      const msg = encodeURIComponent(`طلب اشتراك في دفتر Pro – البريد: ${email}`);
+      const action = plan === 'pro' ? 'تمديد الاشتراك أو الترقية لباقة أعلى في دفتر Pro' : 'طلب اشتراك في دفتر Pro';
+      const msg = encodeURIComponent(`${action} – البريد: ${email}`);
       window.open(`https://wa.me/${cfg.whatsappNumber}?text=${msg}`, '_blank');
     };
   } catch { /* button stays hidden */ }
