@@ -15,7 +15,7 @@ import { withRetry } from '../retry.js';
 
 const MODEL_NAME = process.env.GEMINI_MODEL || 'gemini-3.8-flash'; // fast, free tier, excellent Arabic
 
-const SYSTEM_PROMPT = `أنت مصحح نصوص متخصص في العامية المصرية.
+export const SYSTEM_PROMPT = `أنت مصحح نصوص متخصص في العامية المصرية.
 مهمتك: إعادة بناء النص من تفريغ صوتي (Speech-to-Text) مشوّه إلى جملة مصرية عامية سليمة.
 
 قواعد صارمة:

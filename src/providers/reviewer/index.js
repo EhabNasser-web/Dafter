@@ -13,9 +13,11 @@
  */
 
 import { reviewWithGemini } from './gemini.js';
+import { reviewWithGroq } from './groq.js';
 
 const PROVIDERS = {
   gemini: reviewWithGemini,
+  groq: reviewWithGroq,
 };
 
 /** No-op reviewer for free plan – skips the Gemini call to save cost */
