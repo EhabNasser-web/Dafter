@@ -19,6 +19,7 @@ import { db } from '../../db/index.js';
 import { users } from '../../db/schema.js';
 import { eq } from 'drizzle-orm';
 import { requireAuth } from '../../core/auth.js';
+import { getPlan } from '../../../config/plans.js';
 
 export const router = Router();
 
@@ -43,6 +44,7 @@ router.get('/me', requireAuth, async (req, res) => {
         role: users.role,
         plan: users.plan,
         status: users.status,
+        theme: users.theme,
       })
       .from(users)
       .where(eq(users.id, req.session.userId))
@@ -151,6 +153,42 @@ router.post('/login', async (req, res) => {
 // ─── Logout ───────────────────────────────────────────────────────────────────
 router.post('/logout', (req, res) => {
   req.session.destroy(() => res.json({ ok: true }));
+});
+
+// ─── Update own profile (Phase 2.5 – name + plan-gated theme) ───────────────
+router.patch('/profile', requireAuth, async (req, res) => {
+  try {
+    const [user] = await db
+      .select({ id: users.id, plan: users.plan })
+      .from(users)
+      .where(eq(users.id, req.session.userId))
+      .limit(1);
+    if (!user) return res.status(401).json({ error: 'انتهت الجلسة.' });
+
+    const updates = {};
+    if (req.body.name !== undefined) {
+      const name = String(req.body.name).trim().slice(0, 120);
+      if (!name) return res.status(400).json({ error: 'الاسم غير صالح.' });
+      updates.name = name;
+    }
+    if (req.body.theme !== undefined) {
+      const allowed = getPlan(user.plan).themes ?? ['notebook'];
+      if (!allowed.includes(req.body.theme)) {
+        return res.status(403).json({ error: 'هذا الثيم متاح لخطة Pro.' });
+      }
+      updates.theme = req.body.theme;
+    }
+    if (Object.keys(updates).length === 0) {
+      return res.status(400).json({ error: 'لا توجد حقول صالحة.' });
+    }
+    const [updated] = await db.update(users).set(updates)
+      .where(eq(users.id, user.id))
+      .returning({ name: users.name, theme: users.theme });
+    res.json({ ok: true, ...updated });
+  } catch (err) {
+    console.error('[auth/profile]', err.message);
+    res.status(500).json({ error: 'خطأ في الخادم.' });
+  }
 });
 
 // ─── Delete my data (Phase 2.4) – irreversible, cascades everything ──────────

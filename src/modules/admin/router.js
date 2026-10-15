@@ -180,6 +180,9 @@ adminRouter.patch('/users/:id', async (req, res) => {
     if (updates.status && !['active', 'pending', 'expired', 'disabled'].includes(updates.status)) {
       return res.status(400).json({ error: 'الحالة غير صالحة.' });
     }
+    if (updates.theme && !['notebook', 'stickers'].includes(updates.theme)) {
+      return res.status(400).json({ error: 'الثيم غير صالح.' });
+    }
     if (updates.expires_at !== undefined && updates.expires_at !== null) {
       const d = new Date(updates.expires_at);
       if (Number.isNaN(d.getTime())) {

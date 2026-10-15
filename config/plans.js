@@ -33,6 +33,9 @@ export const plans = {
       reminders: false,
       export: true,
     },
+
+    /** Phase 2.5 – selectable UI themes */
+    themes: ['notebook'],
   },
 
   pro: {
@@ -48,6 +51,7 @@ export const plans = {
       reminders: true,
       export: true,
     },
+    themes: ['notebook', 'stickers'],
   },
 };
 

@@ -167,10 +167,27 @@ app.use('/api/chat', chatRouter);
   });
 
   // ─── Global error handler ─────────────────────────────────────────────────────
+  // Phase 2.5 – every 500 carries an error ID that also lands in the logs.
   app.use((err, _req, res, _next) => {
-    console.error('[server] Unhandled error:', err);
-    res.status(500).json({ error: 'خطأ غير متوقع في الخادم.' });
+    const eid = `E${Date.now().toString(36).toUpperCase()}${Math.floor(Math.random() * 1296).toString(36).toUpperCase()}`;
+    console.error(`[server] Unhandled error [${eid}]:`, err);
+    res.status(500).json({ error: 'خطأ غير متوقع في الخادم.', errorId: eid });
   });
+
+  // ─── Phase 2.5 – environment report (warns, never crashes) ───────────────────
+  const OPTIONAL = ['GOOGLE_API_KEY', 'WHATSAPP_NUMBER', 'BACKUP_PASSPHRASE', 'GEMINI_MODEL', 'GROQ_MODEL', 'REVIEWER_MODEL', 'CHECKIN_CRON'];
+  const REQUIRED = ['DATABASE_URL', 'SESSION_SECRET', 'GROQ_API_KEY', 'VAPID_PUBLIC_KEY', 'VAPID_PRIVATE_KEY'];
+  const missingReq = REQUIRED.filter((k) => !process.env[k]);
+  if (missingReq.length) {
+    console.error(`[env] ❌ Missing REQUIRED variables: ${missingReq.join(', ')} – set them in Railway Variables.`);
+  }
+  const missingOpt = OPTIONAL.filter((k) => !process.env[k]);
+  if (missingOpt.length) {
+    console.log(`[env] ℹ️ Optional variables not set: ${missingOpt.join(', ')}`);
+  }
+  if (process.env.NODE_ENV !== 'production') {
+    console.warn('[env] ⚠️ NODE_ENV is not "production" – session cookies are not Secure.');
+  }
 
   app.listen(PORT, '0.0.0.0', () => {
     console.log(`🚀  Daftar – http://0.0.0.0:${PORT}  [${process.env.NODE_ENV || 'development'}]`);

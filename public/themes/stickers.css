@@ -1,0 +1,62 @@
+/* =============================================================
+   public/themes/stickers.css
+   ثيم الستيكرز (Pro فقط) – مرح، ملصقات ملونة، زوايا كبيرة.
+   يُفعَّل بوضع data-theme="stickers" على عنصر <html>.
+   نفس متغيرات notebook.css – لا CSS للمكونات هنا.
+   ============================================================= */
+
+[data-theme="stickers"] {
+  /* ─── ألوان أساسية ──────────────────────────────────────────── */
+  --color-bg:            #FFF6E9;   /* كريمي مشمشي */
+  --color-surface:       #FFFFFF;   /* بطاقات بيضاء كالملصق */
+  --color-surface-2:     #FFE9C7;   /* سطح ثانوي دافئ */
+  --color-ink:           #3A2E39;   /* بني بنفسجي داكن */
+  --color-ink-light:     #6B5B6E;
+  --color-ink-muted:     #A08FA3;
+  --color-accent:        #E4572E;   /* برتقالي ملصقات */
+  --color-accent-dark:   #C24320;
+  --color-success:       #2E933C;
+
+  /* ─── حدود ───────────────────────────────────────────────────── */
+  --color-border:        rgba(58, 46, 57, 0.14);
+  --color-border-strong: rgba(58, 46, 57, 0.30);
+
+  /* ─── خطوط ───────────────────────────────────────────────────── */
+  --font-display: 'Reem Kufi', 'Aref Ruqaa', Georgia, serif;
+  --font-body:    'Cairo', 'Segoe UI', system-ui, sans-serif;
+
+  /* ─── ظلال ───────────────────────────────────────────────────── */
+  --shadow-sm: 0 2px 0   rgba(58, 46, 57, 0.12);
+  --shadow-md: 0 4px 0   rgba(58, 46, 57, 0.12);
+  --shadow-lg: 0 8px 0   rgba(58, 46, 57, 0.14);
+
+  /* ─── زوايا وانتقالات ─────────────────────────────────────────── */
+  --radius-sm: 14px;
+  --radius-md: 22px;
+  --radius-lg: 32px;
+  --transition: 0.2s ease;
+
+  /* ─── زر الميكروفون ───────────────────────────────────────────── */
+  --mic-size:  72px;
+  --mic-color: var(--color-accent);
+  --mic-ring:  rgba(228, 87, 46, 0.25);
+}
+
+/* ─── الوضع الداكن ──────────────────────────────────────────── */
+[data-theme="stickers"][data-dark="true"],
+[data-theme="stickers"].dark {
+  --color-bg:            #241B26;
+  --color-surface:       #2E2231;
+  --color-surface-2:     #3A2C3E;
+  --color-ink:           #FFF3E4;
+  --color-ink-light:     #D8C4C8;
+  --color-ink-muted:     #8A7589;
+  --color-accent:        #FF7A4D;
+  --color-accent-dark:   #E4572E;
+  --color-success:       #5CC46A;
+  --color-border:        rgba(255, 243, 228, 0.12);
+  --color-border-strong: rgba(255, 243, 228, 0.24);
+  --shadow-sm: 0 2px 0   rgba(0, 0, 0, 0.30);
+  --shadow-md: 0 4px 0   rgba(0, 0, 0, 0.30);
+  --shadow-lg: 0 8px 0   rgba(0, 0, 0, 0.35);
+}
