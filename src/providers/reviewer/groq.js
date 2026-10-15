@@ -23,6 +23,7 @@ export async function reviewWithGroq(rawTranscript) {
     async () => {
       const llm = getLLMProvider();
       const response = await llm.chat({
+        model: process.env.REVIEWER_MODEL || process.env.GROQ_MODEL || 'openai/gpt-oss-120b',
         messages: [
           { role: 'system', content: SYSTEM_PROMPT },
           { role: 'user', content: rawTranscript },
