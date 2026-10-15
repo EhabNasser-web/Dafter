@@ -1631,7 +1631,6 @@ let activeCategoryFilter = 'all';
 function fmt(n, cur = 'EGP') {
   const unit = { EGP: 'جنيه' }[cur] || cur;
   return Number(n).toLocaleString('ar-EG', { minimumFractionDigits: 0, maximumFractionDigits: 2 }) + ' ' + unit;
-}) + '\u202f' + cur;
 }
 
 function fmtDate(d) {
