@@ -39,19 +39,29 @@ router.get('/summary', requireAuth, async (req, res) => {
   }
 });
 
-// POST /api/expenses – create
+// POST /api/expenses – create (Phase 2.4: strict input validation)
 router.post('/', requireAuth, async (req, res) => {
   try {
+    const amount = Number(req.body.amount);
+    if (!Number.isFinite(amount) || amount <= 0 || amount > 1_000_000_000) {
+      return res.status(400).json({ error: 'المبلغ غير صالح.' });
+    }
+    const type = req.body.type ?? 'expense';
+    if (!['expense', 'income'].includes(type)) {
+      return res.status(400).json({ error: 'النوع غير صالح.' });
+    }
+    const category = String(req.body.category ?? 'أخرى').slice(0, 60);
+    const note = req.body.note != null ? String(req.body.note).slice(0, 1000) : null;
+    const currency = String(req.body.currency ?? 'EGP').slice(0, 10);
+    let happened_at = undefined;
+    if (req.body.happened_at) {
+      const d = new Date(req.body.happened_at);
+      if (Number.isNaN(d.getTime())) return res.status(400).json({ error: 'التاريخ غير صالح.' });
+      happened_at = d;
+    }
     const addTool = tools.find(t => t.name === 'add_expense');
     const result = await addTool.execute(
-      {
-        amount: Number(req.body.amount),
-        type: req.body.type || 'expense',
-        category: req.body.category || 'أخرى',
-        note: req.body.note,
-        happened_at: req.body.happened_at,
-        currency: req.body.currency || 'EGP',
-      },
+      { amount, type, category, note, happened_at, currency },
       { userId: req.session.userId }
     );
     res.json(result);

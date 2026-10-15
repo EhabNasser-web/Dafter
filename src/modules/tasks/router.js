@@ -32,9 +32,13 @@ router.patch('/:id/complete', requireAuth, async (req, res) => {
 
 router.post('/', requireAuth, async (req, res) => {
   try {
+    const title = String(req.body.title ?? '').trim();
+    if (!title || title.length > 500) {
+      return res.status(400).json({ error: 'عنوان المهمة مطلوب (حتى 500 حرف).' });
+    }
     const addTool = tools.find(t => t.name === 'add_task');
     const result = await addTool.execute(
-      { title: req.body.title, due_at: req.body.due_at, reminder_at: req.body.reminder_at },
+      { title, due_at: req.body.due_at, reminder_at: req.body.reminder_at },
       { userId: req.session.userId }
     );
     res.json(result);

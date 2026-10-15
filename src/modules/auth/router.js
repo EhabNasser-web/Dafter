@@ -153,7 +153,26 @@ router.post('/logout', (req, res) => {
   req.session.destroy(() => res.json({ ok: true }));
 });
 
-// ─── Forgot password → token (admin shares it manually until email exists) ───
+// ─── Delete my data (Phase 2.4) – irreversible, cascades everything ──────────
+router.delete('/account', requireAuth, async (req, res) => {
+  try {
+    const { password } = req.body ?? {};
+    const [user] = await db
+      .select({ id: users.id, password_hash: users.password_hash })
+      .from(users)
+      .where(eq(users.id, req.session.userId))
+      .limit(1);
+    if (!user) return res.status(401).json({ error: 'انتهت الجلسة.' });
+    if (!password || !(await bcrypt.compare(password, user.password_hash))) {
+      return res.status(401).json({ error: 'كلمة المرور غير صحيحة. لم يُحذف شيء.' });
+    }
+    await db.delete(users).where(eq(users.id, user.id)); // cascades all user data
+    req.session.destroy(() => res.json({ ok: true, message: 'تم حذف حسابك وكل بياناتك نهائياً.' }));
+  } catch (err) {
+    console.error('[auth/delete]', err.message);
+    res.status(500).json({ error: 'خطأ في الخادم.' });
+  }
+});
 router.post('/forgot', async (req, res) => {
   try {
     const { email } = req.body ?? {};

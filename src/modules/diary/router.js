@@ -24,9 +24,14 @@ router.get('/', requireAuth, async (req, res) => {
 
 router.post('/', requireAuth, async (req, res) => {
   try {
+    const content = String(req.body.content ?? '').trim();
+    if (!content || content.length > 5000) {
+      return res.status(400).json({ error: 'نص اليومية مطلوب (حتى 5000 حرف).' });
+    }
+    const mood = req.body.mood != null ? String(req.body.mood).slice(0, 30) : null;
     const addTool = tools.find(t => t.name === 'add_diary_entry');
     const result = await addTool.execute(
-      { content: req.body.content, mood: req.body.mood, day: req.body.day },
+      { content, mood, day: req.body.day },
       { userId: req.session.userId }
     );
     res.json(result);

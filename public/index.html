@@ -1105,6 +1105,11 @@
     </div>
     <p id="login-error" class="login-error">البريد أو كلمة المرور غير صحيحة.</p>
     <button id="login-btn" class="btn-primary">دخول إلى دفتر</button>
+    <div style="display:flex; justify-content:center; gap:12px; font-size:0.78rem; color:var(--color-ink-muted);">
+      <a href="/privacy.html" style="color:var(--color-ink-muted);">الخصوصية</a>
+      <span>·</span>
+      <a href="/terms.html" style="color:var(--color-ink-muted);">الشروط</a>
+    </div>
     <div style="display:flex; justify-content:space-between; font-size:0.82rem;">
       <a href="#" id="link-signup" style="color:var(--color-accent); font-weight:700;">إنشاء حساب جديد</a>
       <a href="#" id="link-forgot" style="color:var(--color-ink-muted);">نسيت كلمة المرور؟</a>
@@ -1302,6 +1307,22 @@
             <button class="cat-pill" id="btn-export-json" style="flex:1; padding:8px; font-size:0.8rem;">تصدير JSON</button>
             <button class="cat-pill" id="btn-export-csv" style="flex:1; padding:8px; font-size:0.8rem;">مصاريف CSV</button>
           </div>
+        </div>
+      </div>
+
+      <!-- منطقة الخطر: حذف الحساب (Phase 2.4) -->
+      <div>
+        <div class="drawer-section-title">
+          <span>⚠️</span>
+          <span>منطقة الخطر</span>
+        </div>
+        <div class="profile-card" style="gap:10px; border-color:var(--color-accent);">
+          <p style="font-size:0.8rem; color:var(--color-ink-muted); margin:0; line-height:1.6;">
+            حذف حسابك نهائيًا مع كل مصاريفك ومهامك ويومياتك. لا يمكن التراجع.
+          </p>
+          <button class="cat-pill" id="btn-delete-account" style="padding:8px; font-size:0.82rem; border-color:var(--color-accent); color:var(--color-accent);">
+            حذف حسابي وكل بياناتي
+          </button>
         </div>
       </div>
 
@@ -2354,6 +2375,29 @@ $('btn-weekly-summary')?.addEventListener('click', async () => {
 });
 $('btn-export-json')?.addEventListener('click', () => { window.location = '/api/export/json'; });
 $('btn-export-csv')?.addEventListener('click', () => { window.location = '/api/export/expenses.csv'; });
+
+/* ─── Phase 2.4: delete my data (double confirm + password) ─── */
+$('btn-delete-account')?.addEventListener('click', async () => {
+  if (!confirm('تحذير أخير: سيُحذف حسابك وكل بياناتك نهائياً. متابعة؟')) return;
+  const password = prompt('أدخل كلمة مرورك للتأكيد النهائي:');
+  if (!password) return;
+  try {
+    const r = await fetch('/api/auth/account', {
+      method: 'DELETE',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ password }),
+    });
+    const d = await r.json();
+    if (d.ok) {
+      alert(d.message);
+      location.reload();
+    } else {
+      toast('⚠️ ' + (d.error || 'تعذّر الحذف.'));
+    }
+  } catch {
+    toast('خطأ في الاتصال.');
+  }
+});
 
 /* ─────────────────────────────────────────────────────────────
    PWA Service Worker & Web Push Notifications

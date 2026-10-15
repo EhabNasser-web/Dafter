@@ -53,6 +53,24 @@ app.use(
 // ─── Security hardening ───────────────────────────────────────────────────────
 app.use(helmet({ contentSecurityPolicy: false }));
 
+// Phase 2.4 – same-origin check for mutating API calls (CSRF defense for
+// cookie sessions; the SPA always sends same-origin requests).
+app.use(['/api', '/admin'], (req, res, next) => {
+  if (!['POST', 'PATCH', 'PUT', 'DELETE'].includes(req.method)) return next();
+  const origin = req.get('origin');
+  const referer = req.get('referer');
+  const host = req.get('host');
+  // Non-browser clients (curl, tests) send neither – allow them.
+  if (!origin && !referer) return next();
+  const bad = (v) => {
+    try { return new URL(v).host !== host; } catch { return true; }
+  };
+  if ((origin && bad(origin)) || (referer && bad(referer))) {
+    return res.status(403).json({ error: 'طلب مرفوض (مصدر غير موثوق).' });
+  }
+  next();
+});
+
 const authLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
   max: 20,
@@ -78,6 +96,14 @@ const voiceLimiter = rateLimit({
   message: { error: 'كثير من الرسائل الصوتية، انتظر قليلاً.' },
 });
 app.use('/api/voice', voiceLimiter);
+
+const apiLimiter = rateLimit({
+  windowMs: 60 * 1000,
+  max: 60,
+  message: { error: 'طلبات كثيرة، انتظر قليلاً.' },
+});
+app.use('/api/summary', apiLimiter);
+app.use('/api/export', apiLimiter);
 
 // ─── Session ──────────────────────────────────────────────────────────────────
 

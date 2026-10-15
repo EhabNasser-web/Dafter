@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>سياسة الخصوصية · دفتر</title>
+  <link rel="stylesheet" href="/themes/notebook.css">
+  <style>
+    body { font-family: var(--font-body); background: var(--color-bg); color: var(--color-ink); margin: 0; padding: 24px 16px 64px; }
+    main { max-width: 640px; margin: 0 auto; background: var(--color-surface); border: 1px solid var(--color-border); border-radius: 12px; padding: 24px; }
+    h1 { font-family: var(--font-display); font-size: 1.6rem; }
+    h2 { font-size: 1.05rem; margin-top: 22px; }
+    p, li { font-size: 0.9rem; line-height: 1.9; }
+    a { color: var(--color-accent); }
+  </style>
+</head>
+<body>
+<main>
+  <h1>سياسة الخصوصية · دفتر</h1>
+  <p>آخر تحديث: أكتوبر 2026. دفتر مساعد شخصي لإدارة المصاريف والمهام واليوميات بالعامية المصرية.</p>
+
+  <h2>1. ما البيانات التي نخزنها؟</h2>
+  <ul>
+    <li>بيانات الحساب: الاسم، البريد، كلمة المرور (مشفرة ولا يمكن قراءتها).</li>
+    <li>بياناتك التي تدخلها: المصاريف، المهام، اليوميات، رسائل المحادثة.</li>
+    <li>اشتراكات الإشعارات الخاصة بجهازك (لإيصال التنبيهات فقط).</li>
+  </ul>
+
+  <h2>2. من يعالج بياناتك؟ (مستوى المزودين)</h2>
+  <ul>
+    <li><b>Groq</b> (الطبقة المجانية): تفريغ الصوت وفهم النص واستدعاء الأدوات. نصوصك الصوتية والمكتوبة تمر عبر خوادمهم لحظة المعالجة.</li>
+    <li><b>Google Gemini</b> (الطبقة المجانية): مراجعة النصوص المفرغة. راجع شروط Google وGroq قبل تخزين بيانات بالغة الحساسية.</li>
+    <li><b>Supabase</b> (Postgres): تخزين قاعدة البيانات. <b>Railway</b>: استضافة التطبيق.</li>
+  </ul>
+
+  <h2>3. من يرى بياناتك؟</h2>
+  <ul>
+    <li>أنت فقط ترى محتوى مصاريفك ومهامك ويومياتك.</li>
+    <li>الإدارة ترى <b>بيانات الحساب فقط</b> (الاسم، البريد، الخطة، الحالة) ولا تطلع على محتوى يومياتك أو مالياتك.</li>
+  </ul>
+
+  <h2>4. حقوقك</h2>
+  <ul>
+    <li>يمكنك تصدير بياناتك كاملة (JSON/CSV) من القائمة الجانبية.</li>
+    <li>يمكنك <b>حذف حسابك وكل بياناتك نهائيًا</b> من القائمة الجانبية (منطقة الخطر). الحذف فوري ولا يمكن التراجع عنه.</li>
+  </ul>
+
+  <h2>5. الاحتفاظ والحماية</h2>
+  <ul>
+    <li>كلمات المرور مشفرة (bcrypt). الجلسات عبر كوكيز آمنة (httpOnly).</li>
+    <li>النسخ الاحتياطية مشفرة ولا تحتفظ بها الإدارة إلا للطوارئ.</li>
+    <li>الحسابات المنتهية تعود تلقائيًا للخطة المجانية.</li>
+  </ul>
+
+  <p><a href="/">رجوع إلى دفتر</a></p>
+</main>
+</body>
+</html>
