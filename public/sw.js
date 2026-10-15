@@ -1,5 +1,5 @@
 // public/sw.js – Service Worker لتطبيق دفتر PWA
-const CACHE_NAME = 'daftar-v1';
+const CACHE_NAME = 'daftar-v2';
 const STATIC_ASSETS = [
   '/',
   '/manifest.json',
