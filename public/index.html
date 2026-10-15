@@ -629,63 +629,69 @@
     }
     .btn-quick-add:hover { background: var(--color-accent-dark); }
 
-    /* بطاقة الملخص المالي كدفتر حسابات أنيق */
+    /* بطاقة الملخص المالي كصفحة دفتر حسابات مسطرة */
     .ledger-summary-card {
       background: var(--color-surface);
-      border: 1px solid var(--color-border);
-      border-radius: var(--radius-lg);
-      padding: 20px;
+      border: 1px solid var(--color-border-strong);
+      border-radius: var(--radius-md);
+      padding: 0;
       margin-bottom: 16px;
       box-shadow: var(--shadow-sm);
-      position: relative;
       overflow: hidden;
     }
-    .ledger-summary-card::before {
-      content: '';
-      position: absolute;
-      top: 0;
-      left: 0;
-      right: 0;
-      height: 4px;
-      background: linear-gradient(90deg, var(--color-accent), var(--color-ink));
+    .ledger-head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 10px 18px;
+      background: var(--color-surface-2);
+      border-bottom: 1px solid var(--color-border-strong);
+      font-size: 0.78rem;
+      font-weight: 800;
+      color: var(--color-ink-light);
+      letter-spacing: 0.02em;
     }
     .ledger-grid {
       display: grid;
       grid-template-columns: 1fr 1fr;
-      gap: 16px;
-      margin-bottom: 16px;
     }
     .ledger-col {
       display: flex;
       flex-direction: column;
-      gap: 4px;
+      gap: 6px;
+      padding: 16px 18px 14px;
+    }
+    .ledger-col + .ledger-col {
+      border-right: 1px solid var(--color-border);
     }
     .ledger-label {
       font-size: 0.76rem;
       color: var(--color-ink-muted);
       font-weight: 600;
-      display: flex;
-      align-items: center;
-      gap: 4px;
     }
     .ledger-val {
       font-family: var(--font-display);
-      font-size: 1.35rem;
+      font-size: 1.4rem;
       font-weight: 700;
+      font-variant-numeric: tabular-nums;
+      line-height: 1.2;
     }
     .ledger-val.expense { color: var(--color-accent); }
     .ledger-val.income  { color: var(--color-success); }
+    /* سطر الإجمالي بخط مزدوج على طريقة الدفاتر – نفس بنية الأعمدة */
     .ledger-net-box {
-      border-top: 1px dashed var(--color-border-strong);
-      padding-top: 12px;
+      border-top: 3px double var(--color-border-strong);
+      padding: 12px 18px 14px;
       display: flex;
-      align-items: center;
-      justify-content: space-between;
+      flex-direction: column;
+      gap: 6px;
     }
     .ledger-net-val {
       font-family: var(--font-display);
-      font-size: 1.2rem;
+      font-size: 1.4rem;
       font-weight: 700;
+      font-variant-numeric: tabular-nums;
+      line-height: 1.2;
     }
     .ledger-net-val.positive { color: var(--color-success); }
     .ledger-net-val.negative { color: var(--color-accent); }
@@ -735,11 +741,6 @@
       box-shadow: var(--shadow-sm);
       position: relative;
       overflow: hidden;
-      transition: transform 0.15s ease, box-shadow 0.15s ease;
-    }
-    .receipt-item:hover {
-      transform: translateY(-1px);
-      box-shadow: var(--shadow-md);
     }
     /* خط التثقيب العلوي للإيصال */
     .receipt-tear-top {
@@ -1424,26 +1425,24 @@
         </button>
       </div>
 
-      <!-- بطاقة الملخص المالي الراقي -->
+      <!-- بطاقة الملخص المالي كصفحة دفتر -->
       <div class="ledger-summary-card">
+        <div class="ledger-head">
+          <span>كشف الحساب</span>
+          <span id="ledger-month"></span>
+        </div>
         <div class="ledger-grid">
           <div class="ledger-col">
-            <div class="ledger-label">
-              <span>🔻</span>
-              <span>إجمالي المصروف</span>
-            </div>
+            <div class="ledger-label">إجمالي المصروف</div>
             <div class="ledger-val expense" id="t-expense">—</div>
           </div>
           <div class="ledger-col">
-            <div class="ledger-label">
-              <span>🔺</span>
-              <span>إجمالي الدخل</span>
-            </div>
+            <div class="ledger-label">إجمالي الدخل</div>
             <div class="ledger-val income" id="t-income">—</div>
           </div>
         </div>
         <div class="ledger-net-box">
-          <span class="ledger-label">الرصيد الصافي المتبقي:</span>
+          <span class="ledger-label">الرصيد الصافي المتبقي</span>
           <span class="ledger-net-val" id="t-net">—</span>
         </div>
       </div>
@@ -1608,7 +1607,9 @@ let allExpensesData = [];
 let activeCategoryFilter = 'all';
 
 function fmt(n, cur = 'EGP') {
-  return Number(n).toLocaleString('ar-EG', { minimumFractionDigits: 0, maximumFractionDigits: 2 }) + '\u202f' + cur;
+  const unit = { EGP: 'جنيه' }[cur] || cur;
+  return Number(n).toLocaleString('ar-EG', { minimumFractionDigits: 0, maximumFractionDigits: 2 }) + ' ' + unit;
+}) + '\u202f' + cur;
 }
 
 function fmtDate(d) {
@@ -2143,6 +2144,7 @@ async function loadExpenses() {
     const totalInc = sum.totalIncome ?? 0;
     const net = totalInc - totalExp;
 
+    $('ledger-month').textContent = new Date().toLocaleDateString('ar-EG', { month: 'long', year: 'numeric' });
     $('t-expense').textContent = fmt(totalExp);
     $('t-income').textContent  = fmt(totalInc);
     const netEl = $('t-net');
