@@ -1669,12 +1669,13 @@ async function refreshSession() {
   } catch { /* keep cached values on failure */ }
 }
 
-/** WhatsApp box: hidden for admins; tailored wording per plan. */
+/** WhatsApp box: hidden for admins; tailored wording per plan. Role read live from server. */
 async function setupSubscribeButton() {
   try {
-    const role = localStorage.getItem('daftar_role');
+    const me = await fetch('/api/auth/me').then(r => (r.ok ? r.json() : null));
+    const role = me?.role || localStorage.getItem('daftar_role');
     if (role === 'admin') return; // admins manage subscriptions, never request them
-    const plan = localStorage.getItem('daftar_plan');
+    const plan = me?.plan || localStorage.getItem('daftar_plan');
     const cfg = await fetch('/api/auth/config').then(r => r.json());
     if (!cfg?.whatsappNumber) return;
     if (plan === 'pro') {
