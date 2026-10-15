@@ -5,9 +5,11 @@
  */
 
 import { readImageWithGemini } from './gemini.js';
+import { readImageWithGroqVision } from './groq.js';
 
 const PROVIDERS = {
   gemini: readImageWithGemini,
+  groq: readImageWithGroqVision,
 };
 
 /**
