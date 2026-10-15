@@ -696,17 +696,19 @@
     .ledger-net-val.positive { color: var(--color-success); }
     .ledger-net-val.negative { color: var(--color-accent); }
 
-    /* فلاتر الفئات */
+    /* فلاتر الفئات كفهرس دفتر – تبويبات بخط سفلي بدل الحبوب */
     .category-pills {
       display: flex;
-      gap: 8px;
+      gap: 2px;
       overflow-x: auto;
-      padding-bottom: 8px;
+      padding-bottom: 0;
       margin-bottom: 16px;
+      border-bottom: 1px solid var(--color-border);
       -webkit-overflow-scrolling: touch;
       scrollbar-width: none;
     }
     .category-pills::-webkit-scrollbar { display: none; }
+    /* زر ثانوي عام */
     .cat-pill {
       background: var(--color-surface);
       border: 1px solid var(--color-border);
@@ -718,13 +720,33 @@
       color: var(--color-ink-light);
       cursor: pointer;
       white-space: nowrap;
-      transition: all 0.15s ease;
+      transition: background 0.15s ease, color 0.15s ease;
       flex-shrink: 0;
     }
     .cat-pill.active {
       background: var(--color-ink);
       color: var(--color-bg);
       border-color: var(--color-ink);
+    }
+    #category-pills .cat-pill {
+      background: none;
+      border: none;
+      border-bottom: 2px solid transparent;
+      border-radius: 0;
+      padding: 8px 12px;
+      font-family: var(--font-body);
+      font-size: 0.82rem;
+      font-weight: 600;
+      color: var(--color-ink-muted);
+      cursor: pointer;
+      white-space: nowrap;
+      transition: color 0.15s ease, border-color 0.15s ease;
+      flex-shrink: 0;
+    }
+    #category-pills .cat-pill.active {
+      background: none;
+      color: var(--color-ink);
+      border-bottom-color: var(--color-accent);
     }
 
     /* قائمة بطاقات الإيصالات الورقية (Paper Receipts) */
