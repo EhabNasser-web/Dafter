@@ -999,19 +999,12 @@
       top: 0;
       bottom: 0;
       right: 0;
-      width: 40px;
-      background: var(--color-surface-2);
+      width: 44px;
+      background-color: var(--color-surface-2);
+      background-size: 44px 44px;
+      background-repeat: repeat-y;
+      background-position: top center;
       border-left: 1px solid var(--color-border-strong);
-    }
-    .diary-margin::after {
-      content: '';
-      position: absolute;
-      top: 0;
-      bottom: 0;
-      left: 7px;
-      width: 1.5px;
-      background: var(--color-accent);
-      opacity: 0.55;
     }
     .diary-meta {
       display: flex;
@@ -2500,6 +2493,20 @@ $('btn-submit-task').addEventListener('click', async () => {
 /* ─────────────────────────────────────────────────────────────
    شاشة اليوميات (Diary)
 ───────────────────────────────────────────────────────────── */
+/* 7 نقوش هندسية إسلامية – نقش لكل يوم من أيام الأسبوع (0=الأحد) */
+const DIARY_PATTERNS = [
+  `<svg xmlns='http://www.w3.org/2000/svg' width='44' height='44'><g fill='none' stroke='#B5523B' stroke-opacity='0.5' stroke-width='1.4'><rect x='13' y='13' width='18' height='18'/><rect x='13' y='13' width='18' height='18' transform='rotate(45 22 22)'/><circle cx='22' cy='22' r='2.5'/></g></svg>`,
+  `<svg xmlns='http://www.w3.org/2000/svg' width='44' height='44'><g fill='none' stroke='#B5523B' stroke-opacity='0.5' stroke-width='1.4'><path d='M22 6 L38 22 L22 38 L6 22 Z'/><path d='M22 16 L28 22 L22 28 L16 22 Z'/></g></svg>`,
+  `<svg xmlns='http://www.w3.org/2000/svg' width='44' height='44'><g fill='none' stroke='#B5523B' stroke-opacity='0.5' stroke-width='1.4'><polygon points='22,5 37,13.5 37,30.5 22,39 7,30.5 7,13.5'/><circle cx='22' cy='22' r='2.5'/></g></svg>`,
+  `<svg xmlns='http://www.w3.org/2000/svg' width='44' height='44'><g fill='none' stroke='#B5523B' stroke-opacity='0.5' stroke-width='1.4'><circle cx='22' cy='22' r='11'/><circle cx='22' cy='22' r='2.5' fill='#B5523B' fill-opacity='0.5' stroke='none'/><path d='M22 2v6M22 36v6M2 22h6M36 22h6'/></g></svg>`,
+  `<svg xmlns='http://www.w3.org/2000/svg' width='44' height='44'><g fill='none' stroke='#B5523B' stroke-opacity='0.5' stroke-width='1.4'><path d='M22 8v28M8 22h28'/><rect x='15' y='15' width='14' height='14' transform='rotate(45 22 22)'/></g></svg>`,
+  `<svg xmlns='http://www.w3.org/2000/svg' width='44' height='44'><g fill='none' stroke='#B5523B' stroke-opacity='0.5' stroke-width='1.4'><circle cx='16' cy='16' r='9'/><circle cx='28' cy='28' r='9'/></g></svg>`,
+  `<svg xmlns='http://www.w3.org/2000/svg' width='44' height='44'><g fill='none' stroke='#B5523B' stroke-opacity='0.5' stroke-width='1.4'><path d='M22 7 L37 35 L7 35 Z'/><path d='M22 18 L30 33 L14 33 Z'/></g></svg>`,
+];
+function diaryPattern(dayStr) {
+  const wd = new Date(dayStr + 'T12:00:00').getDay();
+  return `url("data:image/svg+xml,${encodeURIComponent(DIARY_PATTERNS[wd] || DIARY_PATTERNS[0])}")`;
+}
 function fmtDay(d) {
   return new Date(d).toLocaleDateString('ar-EG', { day: 'numeric', month: 'long', year: 'numeric' });
 }
@@ -2535,6 +2542,8 @@ async function loadDiary() {
         card.className = 'diary-page';
         const margin = document.createElement('div');
         margin.className = 'diary-margin';
+        margin.style.backgroundImage = diaryPattern(d.day);
+        margin.title = fmtDay(d.day);
         card.appendChild(margin);
         const meta = document.createElement('div');
         meta.className = 'diary-meta';
