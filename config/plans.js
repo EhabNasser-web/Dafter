@@ -6,11 +6,11 @@
 
 export const plans = {
   free: {
-    /** Small model for the free tier – keeps cost near zero */
-    model: process.env.GROQ_MODEL_SMALL || 'openai/gpt-oss-20b',
+    /** Same capable model as pro – limited by message count instead */
+    model: process.env.GROQ_MODEL || 'openai/gpt-oss-120b',
 
     /** Max agent messages the user can send per calendar day */
-    daily_message_limit: 20,
+    daily_message_limit: 10,
 
     /** Cumulative voice transcription minutes allowed per month */
     voice_minutes_per_month: 10,
