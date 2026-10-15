@@ -40,6 +40,13 @@ export const users = pgTable('users', {
   /** When a paid subscription expires; NULL means no expiry */
   expires_at: timestamp('expires_at', { withTimezone: true }),
 
+  /** Free-text manual-payment note (amount, method, reference) – admin only */
+  payment_note: text('payment_note'),
+
+  /** Password-reset token (shared manually until email exists) + expiry */
+  reset_token: text('reset_token'),
+  reset_expires_at: timestamp('reset_expires_at', { withTimezone: true }),
+
   created_at: timestamp('created_at', { withTimezone: true })
     .notNull()
     .default(sql`now()`),

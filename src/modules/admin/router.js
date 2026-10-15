@@ -80,6 +80,8 @@ adminRouter.get('/users', async (_req, res) => {
         plan: users.plan,
         status: users.status,
         expires_at: users.expires_at,
+        payment_note: users.payment_note,
+        reset_token: users.reset_token,
         created_at: users.created_at,
         theme: users.theme,
       })
@@ -128,10 +130,24 @@ adminRouter.post('/users', async (req, res) => {
 // ─── Update user (plan / status / expires_at) ─────────────────────────────────
 adminRouter.patch('/users/:id', async (req, res) => {
   try {
-    const allowed = ['plan', 'status', 'expires_at', 'theme', 'name'];
+    const allowed = ['plan', 'status', 'expires_at', 'theme', 'name', 'payment_note'];
     const updates = {};
     for (const key of allowed) {
-      if (req.body[key] !== undefined) updates[key] = req.body[key];
+      if (req.body[key] !== undefined) updates[key] = req.body[key] === '' ? null : req.body[key];
+    }
+
+    if (updates.plan && !['free', 'pro'].includes(updates.plan)) {
+      return res.status(400).json({ error: 'الخطة غير صالحة (free أو pro).' });
+    }
+    if (updates.status && !['active', 'pending', 'expired', 'disabled'].includes(updates.status)) {
+      return res.status(400).json({ error: 'الحالة غير صالحة.' });
+    }
+    if (updates.expires_at !== undefined && updates.expires_at !== null) {
+      const d = new Date(updates.expires_at);
+      if (Number.isNaN(d.getTime())) {
+        return res.status(400).json({ error: 'تاريخ الانتهاء غير صالح.' });
+      }
+      updates.expires_at = d;
     }
 
     if (Object.keys(updates).length === 0) {

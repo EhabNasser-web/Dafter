@@ -8,7 +8,7 @@
 import cron from 'node-cron';
 import { db } from '../db/index.js';
 import { users, conversations, messages } from '../db/schema.js';
-import { eq, desc } from 'drizzle-orm';
+import { eq, desc, and, lte, ne, isNotNull } from 'drizzle-orm';
 import { getRegistry } from './moduleLoader.js';
 import { sendPushToUser } from '../providers/push/index.js';
 import plans from '../../config/plans.js';
@@ -165,6 +165,39 @@ export async function runDailyCheckin({ forceUserId = null, forcePlan = false } 
 }
 
 /**
+ * Phase 2.1 – expiry job: paid accounts past expires_at fall back to free.
+ * Idempotent – safe to run at startup and daily.
+ *
+ * @returns {Promise<{ ok: boolean, expired: number }>}
+ */
+export async function runExpiryJob() {
+  try {
+    const now = new Date();
+    const targets = await db.select({ id: users.id, email: users.email })
+      .from(users)
+      .where(and(
+        eq(users.status, 'active'),
+        ne(users.plan, 'free'),
+        isNotNull(users.expires_at),
+        lte(users.expires_at, now)
+      ));
+
+    for (const t of targets) {
+      await db.update(users)
+        .set({ status: 'expired', plan: 'free' })
+        .where(eq(users.id, t.id));
+      console.log(`[scheduler] Account expired → free: ${t.email}`);
+    }
+
+    if (targets.length) console.log(`[scheduler] ✅ Expiry job: ${targets.length} account(s) moved to free.`);
+    return { ok: true, expired: targets.length };
+  } catch (err) {
+    console.error('[scheduler] ❌ Expiry job failed:', err.message);
+    return { ok: false, error: err.message };
+  }
+}
+
+/**
  * Initializes cron jobs for Daftar.
  */
 export function startScheduler() {
@@ -178,4 +211,11 @@ export function startScheduler() {
   }, {
     timezone,
   });
+
+  // Phase 2.1 – expiry sweep daily at 00:30 Cairo + once at startup (idempotent)
+  console.log('[scheduler] ⏰ Scheduling daily expiry sweep: "30 0 * * *" [tz: Africa/Cairo]');
+  cron.schedule('30 0 * * *', () => {
+    runExpiryJob();
+  }, { timezone });
+  runExpiryJob();
 }

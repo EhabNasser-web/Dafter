@@ -1095,7 +1095,7 @@
     <p>مساعدك الشخصي لإدارة حياتك بالعامية المصرية</p>
   </div>
 
-  <div class="login-card">
+  <div class="login-card" id="login-card-login">
     <div>
       <label class="field-label" for="login-email">البريد الإلكتروني</label>
       <input id="login-email" class="field-input" type="email" placeholder="admin@daftar.app" dir="ltr" autocomplete="email">
@@ -1106,6 +1106,55 @@
     </div>
     <p id="login-error" class="login-error">البريد أو كلمة المرور غير صحيحة.</p>
     <button id="login-btn" class="btn-primary">دخول إلى دفتر</button>
+    <div style="display:flex; justify-content:space-between; font-size:0.82rem;">
+      <a href="#" id="link-signup" style="color:var(--color-accent); font-weight:700;">إنشاء حساب جديد</a>
+      <a href="#" id="link-forgot" style="color:var(--color-ink-muted);">نسيت كلمة المرور؟</a>
+    </div>
+  </div>
+
+  <div class="login-card" id="login-card-signup" style="display:none">
+    <div>
+      <label class="field-label" for="su-name">الاسم</label>
+      <input id="su-name" class="field-input" style="direction:rtl; text-align:right;" placeholder="اسمك" autocomplete="name">
+    </div>
+    <div>
+      <label class="field-label" for="su-email">البريد الإلكتروني</label>
+      <input id="su-email" class="field-input" type="email" placeholder="you@mail.com" dir="ltr" autocomplete="email">
+    </div>
+    <div>
+      <label class="field-label" for="su-pass">كلمة المرور (8 أحرف على الأقل)</label>
+      <input id="su-pass" class="field-input" type="password" placeholder="••••••••" dir="ltr" autocomplete="new-password">
+    </div>
+    <p id="signup-error" class="login-error"></p>
+    <p id="signup-ok" style="display:none; text-align:center; font-size:0.86rem; line-height:1.8;"></p>
+    <button id="signup-btn" class="btn-primary">إنشاء الحساب</button>
+    <div style="text-align:center; font-size:0.82rem;">
+      <a href="#" id="link-back-login" style="color:var(--color-ink-muted);">رجوع لتسجيل الدخول</a>
+    </div>
+  </div>
+
+  <div class="login-card" id="login-card-forgot" style="display:none">
+    <p style="font-size:0.86rem; line-height:1.8; color:var(--color-ink-light);">أدخل بريدك وسنجهّز لك رمز استرجاع تحصل عليه من الإدارة (صالح لساعة).</p>
+    <div>
+      <label class="field-label" for="fg-email">البريد الإلكتروني</label>
+      <input id="fg-email" class="field-input" type="email" placeholder="you@mail.com" dir="ltr" autocomplete="email">
+    </div>
+    <p id="forgot-error" class="login-error"></p>
+    <p id="forgot-ok" style="display:none; text-align:center; font-size:0.86rem; line-height:1.8;"></p>
+    <button id="forgot-btn" class="btn-primary">طلب رمز الاسترجاع</button>
+    <div style="text-align:center; font-size:0.82rem;">
+      <a href="#" id="link-back-login2" style="color:var(--color-ink-muted);">رجوع لتسجيل الدخول</a>
+    </div>
+  </div>
+
+  <div class="login-card" id="login-card-reset" style="display:none">
+    <p style="font-size:0.86rem; line-height:1.8; color:var(--color-ink-light);">اختر كلمة مرور جديدة (8 أحرف على الأقل).</p>
+    <div>
+      <label class="field-label" for="rs-pass">كلمة المرور الجديدة</label>
+      <input id="rs-pass" class="field-input" type="password" placeholder="••••••••" dir="ltr" autocomplete="new-password">
+    </div>
+    <p id="reset-error" class="login-error"></p>
+    <button id="reset-btn" class="btn-primary">تغيير كلمة المرور</button>
   </div>
 </div>
 
@@ -1208,6 +1257,34 @@
             <div class="s-num" id="stat-tasks-count">0</div>
             <div class="s-txt">مهام مفتوحة</div>
           </div>
+        </div>
+      </div>
+
+      <!-- طلب الاشتراك (يظهر عند ضبط رقم الواتساب) -->
+      <div id="subscribe-box" style="display:none;">
+        <div class="drawer-section-title">
+          <span>💳</span>
+          <span>الاشتراك</span>
+        </div>
+        <div class="profile-card" style="gap:10px;">
+          <p style="font-size:0.8rem; color:var(--color-ink-muted); margin:0; line-height:1.6;">
+            للترقية إلى Pro تواصل معنا عبر واتساب وسيتم تفعيل حسابك يدوياً.
+          </p>
+          <button class="btn-primary" id="btn-subscribe" style="padding:9px; font-size:0.86rem;">
+            طلب اشتراك عبر واتساب
+          </button>
+        </div>
+      </div>
+
+      <!-- إدارة المستخدمين (للأدمن فقط) -->
+      <div id="admin-box" style="display:none;">
+        <div class="drawer-section-title">
+          <span>🛠️</span>
+          <span>إدارة المستخدمين</span>
+        </div>
+        <div class="profile-card" style="gap:10px;">
+          <div id="admin-users-list" style="display:flex; flex-direction:column; gap:10px; font-size:0.82rem;"></div>
+          <button class="cat-pill" id="btn-reload-users" style="padding:7px 10px; font-size:0.8rem;">تحديث القائمة</button>
         </div>
       </div>
 
@@ -1533,17 +1610,120 @@ async function checkAuth() {
 function showLogin() {
   $('login-screen').style.display = 'flex';
   $('app').style.display = 'none';
+  showLoginCard('login-card-login');
 }
-function showApp() {
+function showLoginCard(id) {
+  ['login-card-login', 'login-card-signup', 'login-card-forgot', 'login-card-reset']
+    .forEach(c => { $(c).style.display = c === id ? 'flex' : 'none'; });
+}
+[['link-signup', 'login-card-signup'], ['link-forgot', 'login-card-forgot'],
+ ['link-back-login', 'login-card-login'], ['link-back-login2', 'login-card-login']
+].forEach(([link, card]) => $(link)?.addEventListener('click', e => { e.preventDefault(); showLoginCard(card); }));
+async function showApp() {
   $('login-screen').style.display = 'none';
   $('app').style.display = 'flex';
   loadProfile();
   const plan = localStorage.getItem('daftar_plan') || 'free';
   const badge = $('drawer-plan-badge');
   if (badge) badge.textContent = plan === 'pro' ? 'خطة Pro' : 'خطة مجانية';
+  await refreshSession();
+  await setupSubscribeButton();
   checkPushSubscription();
   loadScreen(currentScreen);
 }
+
+/** Refresh role/plan from the server and toggle the admin panel. */
+async function refreshSession() {
+  try {
+    const me = await fetch('/api/auth/me').then(r => r.json());
+    if (me?.role) localStorage.setItem('daftar_role', me.role);
+    if (me?.plan) localStorage.setItem('daftar_plan', me.plan);
+    const badge = $('drawer-plan-badge');
+    if (badge) badge.textContent = (me?.plan === 'pro') ? 'خطة Pro' : 'خطة مجانية';
+    const isAdmin = me?.role === 'admin';
+    $('admin-box').style.display = isAdmin ? '' : 'none';
+    if (isAdmin) loadAdminUsers();
+  } catch { /* keep cached values on failure */ }
+}
+
+/** WhatsApp subscription button (hidden when no number configured). */
+async function setupSubscribeButton() {
+  try {
+    const cfg = await fetch('/api/auth/config').then(r => r.json());
+    if (!cfg?.whatsappNumber) return;
+    $('subscribe-box').style.display = '';
+    $('btn-subscribe').onclick = () => {
+      const email = localStorage.getItem('daftar_email') || '';
+      const msg = encodeURIComponent(`طلب اشتراك في دفتر Pro – البريد: ${email}`);
+      window.open(`https://wa.me/${cfg.whatsappNumber}?text=${msg}`, '_blank');
+    };
+  } catch { /* button stays hidden */ }
+}
+
+/* ─── Admin: user list + activation ─── */
+async function loadAdminUsers() {
+  const list = $('admin-users-list');
+  list.innerHTML = '<div class="spinner"></div>';
+  try {
+    const rows = await fetch('/admin/users').then(r => r.json());
+    if (!Array.isArray(rows)) { list.innerHTML = '<p>تعذّر التحميل.</p>'; return; }
+    list.innerHTML = '';
+    for (const u of rows) {
+      const div = document.createElement('div');
+      div.style.cssText = 'border:1px solid var(--color-border); border-radius:8px; padding:8px 10px; display:flex; flex-direction:column; gap:6px;';
+      const exp = u.expires_at ? new Date(u.expires_at).toLocaleDateString('ar-EG') : '—';
+      div.innerHTML =
+        `<div><b></b> <span style="color:var(--color-ink-muted);"></span></div>` +
+        `<div style="display:flex; gap:6px; flex-wrap:wrap; font-size:0.75rem; color:var(--color-ink-muted);">
+           <span>${u.role === 'admin' ? 'أدمن' : 'مستخدم'}</span>·<span>${u.plan === 'pro' ? 'Pro' : 'مجانية'}</span>·<span>${({ active: 'مفعّل', pending: 'قيد المراجعة', expired: 'منتهي', disabled: 'موقوف' })[u.status] || u.status}</span>·<span>ينتهي: ${exp}</span>
+         </div>` +
+        (u.reset_token ? `<div style="font-size:0.72rem; direction:ltr; text-align:left; word-break:break-all;">🔑 <code></code></div>` : '') +
+        `<div style="display:flex; gap:6px; flex-wrap:wrap;"></div>`;
+      div.querySelector('b').textContent = u.name;
+      div.querySelector('span').textContent = u.email;
+      if (u.reset_token) div.querySelector('code').textContent = u.reset_token;
+      if (u.payment_note) {
+        const noteDiv = document.createElement('div');
+        noteDiv.style.fontSize = '0.75rem';
+        noteDiv.textContent = '💰 ' + u.payment_note;
+        div.insertBefore(noteDiv, div.querySelector('div:last-child'));
+      }
+      const btns = div.querySelector('div:last-child');
+      const mkBtn = (label, patch) => {
+        const b = document.createElement('button');
+        b.className = 'cat-pill';
+        b.style.cssText = 'padding:4px 10px; font-size:0.75rem;';
+        b.textContent = label;
+        b.onclick = async () => {
+          let body = patch;
+          if (patch === 'NOTE') {
+            const note = prompt('ملاحظة الدفع (المبلغ، الطريقة، المرجع):', u.payment_note || '');
+            if (note === null) return;
+            body = { payment_note: note };
+          }
+          if (patch === 'EXPIRY') {
+            const date = prompt('تاريخ الانتهاء (YYYY-MM-DD) – فارغ للإلغاء:', u.expires_at ? u.expires_at.slice(0, 10) : '');
+            if (date === null) return;
+            body = { expires_at: date ? new Date(date + 'T23:59:59+02:00').toISOString() : null };
+          }
+          await fetch(`/admin/users/${u.id}`, { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
+          loadAdminUsers();
+        };
+        btns.appendChild(b);
+      };
+      if (u.status === 'pending') mkBtn('تفعيل', { status: 'active' });
+      if (u.plan !== 'pro') mkBtn('ترقية Pro', { plan: 'pro', status: 'active' });
+      else mkBtn('إرجاع مجانية', { plan: 'free' });
+      mkBtn('ملاحظة دفع', 'NOTE');
+      mkBtn('انتهاء', 'EXPIRY');
+      list.appendChild(div);
+    }
+  } catch {
+    list.innerHTML = '<p>خطأ في التحميل.</p>';
+  }
+}
+
+$('btn-reload-users')?.addEventListener('click', loadAdminUsers);
 
 $('login-btn').addEventListener('click', async () => {
   const email = $('login-email').value.trim();
@@ -1552,7 +1732,7 @@ $('login-btn').addEventListener('click', async () => {
   $('login-btn').disabled = true;
   $('login-btn').textContent = 'جاري الدخول…';
   try {
-    const r = await fetch('/admin/login', {
+    const r = await fetch('/api/auth/login', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ email, password: pass }),
@@ -1560,9 +1740,11 @@ $('login-btn').addEventListener('click', async () => {
     const d = await r.json();
     if (d.ok) {
       if (d.name) localStorage.setItem('daftar_name', d.name);
+      if (d.email) localStorage.setItem('daftar_email', d.email);
       if (d.role) localStorage.setItem('daftar_role', d.role);
       if (d.plan) localStorage.setItem('daftar_plan', d.plan);
       showApp();
+      if (d.notice) toast(d.notice, 5000);
     } else {
       $('login-error').textContent = d.error || 'البريد أو كلمة المرور غير صحيحة.';
       $('login-error').style.display = 'block';
@@ -1574,12 +1756,92 @@ $('login-btn').addEventListener('click', async () => {
   $('login-btn').textContent = 'دخول إلى دفتر';
 });
 
+$('signup-btn').addEventListener('click', async () => {
+  const name = $('su-name').value.trim();
+  const email = $('su-email').value.trim();
+  const password = $('su-pass').value;
+  $('signup-error').style.display = 'none';
+  $('signup-ok').style.display = 'none';
+  try {
+    const r = await fetch('/api/auth/signup', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ name, email, password }),
+    });
+    const d = await r.json();
+    if (r.status === 201) {
+      $('signup-ok').textContent = d.message;
+      $('signup-ok').style.display = 'block';
+    } else {
+      $('signup-error').textContent = d.error || 'تعذّر إنشاء الحساب.';
+      $('signup-error').style.display = 'block';
+    }
+  } catch {
+    $('signup-error').textContent = 'خطأ في الاتصال.';
+    $('signup-error').style.display = 'block';
+  }
+});
+
+$('forgot-btn').addEventListener('click', async () => {
+  const email = $('fg-email').value.trim();
+  $('forgot-error').style.display = 'none';
+  $('forgot-ok').style.display = 'none';
+  try {
+    const r = await fetch('/api/auth/forgot', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email }),
+    });
+    const d = await r.json();
+    if (d.ok) {
+      $('forgot-ok').textContent = d.message;
+      $('forgot-ok').style.display = 'block';
+    } else {
+      $('forgot-error').textContent = d.error || 'تعذّر إرسال الطلب.';
+      $('forgot-error').style.display = 'block';
+    }
+  } catch {
+    $('forgot-error').textContent = 'خطأ في الاتصال.';
+    $('forgot-error').style.display = 'block';
+  }
+});
+
+const resetToken = new URLSearchParams(location.search).get('reset');
+if (resetToken) {
+  showLogin();
+  showLoginCard('login-card-reset');
+}
+$('reset-btn')?.addEventListener('click', async () => {
+  const password = $('rs-pass').value;
+  $('reset-error').style.display = 'none';
+  try {
+    const r = await fetch('/api/auth/reset', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ token: resetToken, password }),
+    });
+    const d = await r.json();
+    if (d.ok) {
+      toast('✅ ' + d.message);
+      history.replaceState(null, '', location.pathname);
+      showLoginCard('login-card-login');
+    } else {
+      $('reset-error').textContent = d.error || 'تعذّر تغيير كلمة المرور.';
+      $('reset-error').style.display = 'block';
+    }
+  } catch {
+    $('reset-error').textContent = 'خطأ في الاتصال.';
+    $('reset-error').style.display = 'block';
+  }
+});
+
 ['login-email', 'login-pass'].forEach(id =>
   $(id).addEventListener('keydown', e => { if (e.key === 'Enter') $('login-btn').click(); })
 );
 
 $('logout-btn').addEventListener('click', async () => {
-  await fetch('/admin/logout', { method: 'POST' }).catch(() => {});
+  await fetch('/api/auth/logout', { method: 'POST' }).catch(() => {});
+  ['daftar_role', 'daftar_plan', 'daftar_email'].forEach(k => localStorage.removeItem(k));
   showLogin();
   toast('تم تسجيل الخروج');
 });

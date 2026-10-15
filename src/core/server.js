@@ -61,6 +61,9 @@ const authLimiter = rateLimit({
   message: { error: 'كثير من المحاولات، انتظر قليلاً.' },
 });
 app.use('/admin/login', authLimiter);
+app.use('/api/auth/login', authLimiter);
+app.use('/api/auth/signup', authLimiter);
+app.use('/api/auth/forgot', authLimiter);
 
 const chatLimiter = rateLimit({
   windowMs: 60 * 1000,

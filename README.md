@@ -209,5 +209,25 @@ npm run backup-db
      `🚀 Daftar – http://localhost:PORT [production]`
    - افتح رابط الدومين المخصص لك من Railway واستمتع بـ **دفتر** كـ Daily Driver!
 
+---
+
+## Phase 2 · Step 2.1 – Public Signup & Manual Activation
+
+### ما اتبنى
+
+| الملف | الغرض |
+|---|---|
+| `drizzle/0004_phase2_auth.sql` | أعمدة `payment_note` و`reset_token` و`reset_expires_at` في `users` |
+| `src/modules/auth/router.js` | `/api/auth/*`: config وme وsignup (pending) وlogin وlogout وforgot وreset |
+| `src/modules/admin/router.js` | قائمة المستخدمين تشمل الملاحظة والتوكن + تحقق من plan/status وتحويل التواريخ |
+| `src/core/scheduler.js` | مهمة الانتهاء اليومية `runExpiryJob` (منتهي ← مجانية) + جدولة 00:30 |
+| `public/index.html` | نماذج التسجيل والاسترجاع + لوحة أدمن في الدرج + زر واتساب |
+
+### قرارات معمارية
+
+- **لا SMTP بعد:** رمز الاسترجاع يظهر في لوحة الأدمن لمشاركته يدويًا (صالح لساعة).
+- **المنتهي يرجع مجانية** تلقائيًا عبر المهمة اليومية، والدخول يعمل كمجانية مع تنبيه.
+- زر الاشتراك واتساب يختفي لو `WHATSAPP_NUMBER` غير مضبوط.
+
 
 
