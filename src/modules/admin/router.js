@@ -14,6 +14,7 @@ import bcrypt from 'bcrypt';
 import { db } from '../../db/index.js';
 import { users } from '../../db/schema.js';
 import { requireAdmin } from '../../core/auth.js';
+import { getUsageSummary } from '../../core/usage.js';
 import { eq } from 'drizzle-orm';
 
 export const adminRouter = Router();
@@ -92,6 +93,32 @@ adminRouter.get('/users', async (_req, res) => {
   } catch (err) {
     console.error('[admin/users GET]', err);
     return res.status(500).json({ error: 'خطأ في الخادم.' });
+  }
+});
+
+// ─── Usage & cost summary (Phase 2.2) ─────────────────────────────────────────
+adminRouter.get('/usage/summary', async (_req, res) => {
+  try {
+    const all = await db
+      .select({ id: users.id, name: users.name, email: users.email, plan: users.plan })
+      .from(users)
+      .orderBy(users.created_at);
+
+    const rows = await Promise.all(
+      all.map(async (u) => ({ ...u, ...(await getUsageSummary(u.id)) }))
+    );
+    const totals = rows.reduce(
+      (acc, r) => ({
+        messagesToday: acc.messagesToday + r.messagesToday,
+        voiceMonthSec: acc.voiceMonthSec + r.voiceMonthSec,
+        costMonthUSD: acc.costMonthUSD + r.costMonthUSD,
+      }),
+      { messagesToday: 0, voiceMonthSec: 0, costMonthUSD: 0 }
+    );
+    res.json({ users: rows, totals });
+  } catch (err) {
+    console.error('[admin/usage]', err.message);
+    res.status(500).json({ error: 'خطأ في الخادم.' });
   }
 });
 

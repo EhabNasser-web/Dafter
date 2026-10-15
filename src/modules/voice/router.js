@@ -12,6 +12,8 @@ import { getSttProvider } from '../../providers/stt/index.js';
 import { getReviewerProvider } from '../../providers/reviewer/index.js';
 import { runAgent } from '../../core/agent.js';
 import { getPlan } from '../../../config/plans.js';
+import { checkQuota, logUsage } from '../../core/usage.js';
+import { llmCostEstimate, sttCostEstimate } from '../../../config/costs.js';
 
 export const router = Router();
 
@@ -60,6 +62,16 @@ router.post('/', requireAuth, handleUpload, async (req, res) => {
     const userPlan = req.session.userPlan ?? 'free';
     const plan = getPlan(userPlan);
 
+    // Quota gates before spending on STT
+    const msgQuota = await checkQuota(req.session.userId, userPlan, 'message');
+    if (!msgQuota.allowed) {
+      return res.status(429).json({ error: msgQuota.error });
+    }
+    const voiceQuota = await checkQuota(req.session.userId, userPlan, 'voice');
+    if (!voiceQuota.allowed) {
+      return res.status(429).json({ error: voiceQuota.error });
+    }
+
     // 1. Transcribe with Whisper
     const stt = getSttProvider();
     const mime = req.file.mimetype || 'audio/webm';
@@ -102,7 +114,16 @@ router.post('/', requireAuth, handleUpload, async (req, res) => {
       transcribed: true, // numbers may be misheard – agent must confirm amounts first
     });
 
-    res.json({ ...result, transcript: text.trim() });
+    // Fire-and-forget accounting
+    logUsage(req.session.userId, 'voice', durationSeconds ?? 0, sttCostEstimate(durationSeconds ?? 0));
+    logUsage(req.session.userId, 'message', 1, 0);
+    if (result.usage) {
+      const { model, promptTokens, completionTokens } = result.usage;
+      logUsage(req.session.userId, 'tokens', promptTokens + completionTokens,
+        llmCostEstimate(model, promptTokens, completionTokens));
+    }
+
+    res.json({ reply: result.reply, toolsUsed: result.toolsUsed, transcript: text.trim() });
   } catch (err) {
     console.error('[voice] Agent error:', err.message);
     res.status(500).json({ error: 'معلش، فيه مشكلة. جرب تاني.' });

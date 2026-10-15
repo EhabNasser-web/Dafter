@@ -142,6 +142,7 @@ export async function runAgent({ userId, userPlan, text, voiceSeconds = 0, trans
   let finalReply = '';
   let iterations = 0;
   const MAX_ITERATIONS = 5;
+  const usage = { model: plan.model, promptTokens: 0, completionTokens: 0 };
 
   while (iterations < MAX_ITERATIONS) {
     iterations++;
@@ -154,6 +155,9 @@ export async function runAgent({ userId, userPlan, text, voiceSeconds = 0, trans
       max_tokens: 1024,
       model: plan.model,
     });
+
+    usage.promptTokens += response.usage?.prompt_tokens ?? 0;
+    usage.completionTokens += response.usage?.completion_tokens ?? 0;
 
     const choice = response.choices?.[0];
     const msg = choice?.message;
@@ -200,5 +204,5 @@ export async function runAgent({ userId, userPlan, text, voiceSeconds = 0, trans
     // Continue loop to get the final assistant reply after tool results
   }
 
-  return { reply: finalReply, toolsUsed };
+  return { reply: finalReply, toolsUsed, usage };
 }

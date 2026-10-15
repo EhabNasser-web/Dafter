@@ -1416,6 +1416,9 @@
     <div id="screen-tasks" class="screen">
       <div class="expenses-header-row">
         <h2 class="screen-title">دفتر المهام</h2>
+        <button class="btn-quick-add" id="btn-open-add-task">
+          <span>+ مهمة يدوية</span>
+        </button>
       </div>
       <div id="tasks-list"><div class="spinner"></div></div>
     </div>
@@ -1493,6 +1496,27 @@
     </div>
 
     <button class="btn-primary" id="btn-submit-expense">حفظ المعاملة</button>
+  </div>
+</div>
+
+<!-- ════════════════════════════════════
+     نافذة إضافة مهمة يدوية (Modal)
+════════════════════════════════════ -->
+<div class="modal-overlay" id="add-task-modal">
+  <div class="modal-box">
+    <div class="modal-header">
+      <h3>مهمة جديدة</h3>
+      <button class="modal-close" id="btn-close-task-modal">✕</button>
+    </div>
+    <div>
+      <label class="field-label" for="manual-task-title">عنوان المهمة</label>
+      <input class="field-input" id="manual-task-title" placeholder="مثلاً: أكلم الدكتور" style="text-align:right;">
+    </div>
+    <div>
+      <label class="field-label" for="manual-task-due">تاريخ الاستحقاق (اختياري)</label>
+      <input class="field-input" id="manual-task-due" type="date" style="text-align:right;" dir="ltr">
+    </div>
+    <button class="btn-primary" id="btn-submit-task">حفظ المهمة</button>
   </div>
 </div>
 
@@ -1665,9 +1689,20 @@ async function loadAdminUsers() {
   const list = $('admin-users-list');
   list.innerHTML = '<div class="spinner"></div>';
   try {
-    const rows = await fetch('/admin/users').then(r => r.json());
+    const [rows, summary] = await Promise.all([
+      fetch('/admin/users').then(r => r.json()),
+      fetch('/admin/usage/summary').then(r => r.json()).catch(() => null),
+    ]);
+    const usageById = {};
+    for (const u of summary?.users || []) usageById[u.id] = u;
     if (!Array.isArray(rows)) { list.innerHTML = '<p>تعذّر التحميل.</p>'; return; }
     list.innerHTML = '';
+    if (summary?.totals) {
+      const t = document.createElement('p');
+      t.style.cssText = 'font-size:0.78rem; color:var(--color-ink-muted); margin:0;';
+      t.textContent = `الإجمالي: ${summary.totals.messagesToday} رسالة اليوم · ${Math.round(summary.totals.voiceMonthSec)} ثانية صوت · ≈$${summary.totals.costMonthUSD.toFixed(4)}`;
+      list.appendChild(t);
+    }
     for (const u of rows) {
       const div = document.createElement('div');
       div.style.cssText = 'border:1px solid var(--color-border); border-radius:8px; padding:8px 10px; display:flex; flex-direction:column; gap:6px;';
@@ -1681,6 +1716,13 @@ async function loadAdminUsers() {
         `<div style="display:flex; gap:6px; flex-wrap:wrap;"></div>`;
       div.querySelector('b').textContent = u.name;
       div.querySelector('span').textContent = u.email;
+      const stats = usageById[u.id];
+      if (stats) {
+        const s = document.createElement('div');
+        s.style.cssText = 'font-size:0.75rem; color:var(--color-ink-muted);';
+        s.textContent = `📊 اليوم: ${stats.messagesToday} رسالة · الشهر: ${Math.round(stats.voiceMonthSec)} ث صوت · ≈$${Number(stats.costMonthUSD).toFixed(4)}`;
+        div.insertBefore(s, div.querySelector('div:last-child'));
+      }
       if (u.reset_token) div.querySelector('code').textContent = u.reset_token;
       if (u.payment_note) {
         const noteDiv = document.createElement('div');
@@ -2193,6 +2235,40 @@ async function completeTask(id) {
   }
 }
 window.completeTask = completeTask;
+
+/* نافذة إضافة مهمة يدوية (تعمل بدون ذكاء اصطناعي – للخطة المجانية بعد الحد) */
+$('btn-open-add-task').addEventListener('click', () => {
+  $('add-task-modal').classList.add('open');
+});
+$('btn-close-task-modal').addEventListener('click', () => {
+  $('add-task-modal').classList.remove('open');
+});
+$('btn-submit-task').addEventListener('click', async () => {
+  const title = $('manual-task-title').value.trim();
+  if (!title) { alert('اكتب عنوان المهمة.'); return; }
+  const dueDate = $('manual-task-due').value;
+  $('btn-submit-task').disabled = true;
+  try {
+    const r = await fetch('/api/tasks', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ title, due_at: dueDate || null }),
+    });
+    const d = await r.json();
+    if (d.ok) {
+      toast('✅ تم حفظ المهمة');
+      $('manual-task-title').value = '';
+      $('manual-task-due').value = '';
+      $('add-task-modal').classList.remove('open');
+      loadTasks();
+    } else {
+      toast(d.error || 'خطأ في الحفظ');
+    }
+  } catch {
+    toast('خطأ في الاتصال');
+  }
+  $('btn-submit-task').disabled = false;
+});
 
 /* ─────────────────────────────────────────────────────────────
    شاشة اليوميات (Diary)

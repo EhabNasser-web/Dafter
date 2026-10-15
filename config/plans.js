@@ -6,8 +6,8 @@
 
 export const plans = {
   free: {
-    /** Groq model ID – available on user's API key */
-    model: process.env.GROQ_MODEL || 'openai/gpt-oss-120b',
+    /** Small model for the free tier – keeps cost near zero */
+    model: process.env.GROQ_MODEL_SMALL || 'openai/gpt-oss-20b',
 
     /** Max agent messages the user can send per calendar day */
     daily_message_limit: 20,

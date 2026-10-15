@@ -127,6 +127,19 @@ export const diary = pgTable('diary', {
   created_at: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
 });
 
+// ─── usage (Phase 2.2 – quotas & cost estimates) ─────────────────────────────
+export const usage = pgTable('usage', {
+  id:       uuid('id').primaryKey().default(sql`gen_random_uuid()`),
+  user_id:  uuid('user_id').notNull().references(() => users.id, { onDelete: 'cascade' }),
+  day:      date('day').notNull(),
+  /** 'message' (count) | 'voice' (seconds) | 'tokens' (count) */
+  kind:     varchar('kind', { length: 20 }).notNull(),
+  units:    numeric('units').notNull().default('0'),
+  /** USD estimate – see config/costs.js */
+  cost_estimate: numeric('cost_estimate').notNull().default('0'),
+  created_at: timestamp('created_at', { withTimezone: true }).notNull().default(sql`now()`),
+});
+
 // ─── push_subscriptions ───────────────────────────────────────────────────────
 export const pushSubscriptions = pgTable('push_subscriptions', {
   id:         uuid('id').primaryKey().defaultRandom(),
