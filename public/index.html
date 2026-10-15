@@ -1669,9 +1669,12 @@ async function refreshSession() {
   } catch { /* keep cached values on failure */ }
 }
 
-/** WhatsApp subscription button (hidden when no number configured). */
+/** WhatsApp subscription button: free-plan users only, hidden otherwise. */
 async function setupSubscribeButton() {
   try {
+    const role = localStorage.getItem('daftar_role');
+    const plan = localStorage.getItem('daftar_plan');
+    if (role === 'admin' || plan === 'pro') return; // nothing to subscribe to
     const cfg = await fetch('/api/auth/config').then(r => r.json());
     if (!cfg?.whatsappNumber) return;
     $('subscribe-box').style.display = '';
