@@ -70,6 +70,16 @@ router.post('/', requireAuth, handleUpload, async (req, res) => {
       return res.status(422).json({ error: 'لم أسمع شيئاً واضحاً. سجّل مجدداً بصوت أعلى.' });
     }
 
+    // Guard: Whisper sometimes returns Latin transliteration for unclear audio
+    // (e.g. "arن μsr ofta alls"). Feeding that to the agent produces nonsense
+    // records – ask the user to re-record instead.
+    const arabicChars = (rawText.match(/[\u0600-\u06FF]/g) || []).length;
+    const letters = (rawText.match(/\p{L}/gu) || []).length;
+    if (letters > 0 && arabicChars / letters < 0.3) {
+      console.log(`[voice] rejecting non-Arabic transcript: ${rawText.slice(0, 120)}`);
+      return res.status(422).json({ error: 'الصوت كان غير واضح والتفريغ طلع ملخبط. سجّل تاني في مكان هادي وبصوت واضح.' });
+    }
+
     // 2. Review/correct the transcript (skipped on free plan to save cost)
     let text = rawText;
     console.log(`[voice] raw transcript (${durationSeconds ?? 0}s): ${rawText.slice(0, 200)}`);
@@ -89,6 +99,7 @@ router.post('/', requireAuth, handleUpload, async (req, res) => {
       userPlan,
       text: text.trim(),
       voiceSeconds: durationSeconds ?? 0,
+      transcribed: true, // numbers may be misheard – agent must confirm amounts first
     });
 
     res.json({ ...result, transcript: text.trim() });

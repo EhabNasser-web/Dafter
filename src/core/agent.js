@@ -90,10 +90,10 @@ function toApiMessages(history) {
 
 /**
  * Main agent entry point.
- * @param {{ userId: string, userPlan: string, text: string, voiceSeconds?: number }} opts
+ * @param {{ userId: string, userPlan: string, text: string, voiceSeconds?: number, transcribed?: boolean }} opts
  * @returns {Promise<{ reply: string, toolsUsed: string[] }>}
  */
-export async function runAgent({ userId, userPlan, text, voiceSeconds = 0 }) {
+export async function runAgent({ userId, userPlan, text, voiceSeconds = 0, transcribed = false }) {
   const plan = plans[userPlan] ?? plans.free;
   const availableTools = getToolsForPlan(userPlan, plans);
   const ctx = { userId };
@@ -128,6 +128,12 @@ export async function runAgent({ userId, userPlan, text, voiceSeconds = 0 }) {
   // Build messages for LLM
   const apiMessages = [
     { role: 'system', content: SYSTEM_PROMPT },
+    ...(transcribed
+      ? [{
+          role: 'system',
+          content: 'ملاحظة: رسالة المستخدم التالية مفرّغة من تسجيل صوتي وقد تحتوي أخطاء سمع، خاصة في الأرقام والمبالغ. قبل تسجيل أي مصروف أو مهمة، أكد الرقم والمبلغ مع المستخدم في ردك، ولا تستدعي أداة الحفظ إلا بعد تأكيده الصريح.',
+        }]
+      : []),
     ...toApiMessages(history),
     { role: 'user', content: text },
   ];

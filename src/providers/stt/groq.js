@@ -13,7 +13,7 @@ import fetch from 'node-fetch';
 import { withRetry } from '../retry.js';
 
 const GROQ_STT_URL = 'https://api.groq.com/openai/v1/audio/transcriptions';
-const MODEL = 'whisper-large-v3-turbo'; // fastest + best Arabic quality on Groq
+const MODEL = process.env.WHISPER_MODEL || 'whisper-large-v3'; // full model: slower but more accurate than turbo, especially numbers/dialect
 
 /**
  * Transcribe audio using Groq Whisper.

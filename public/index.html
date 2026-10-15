@@ -1694,6 +1694,9 @@ $('mic-btn').addEventListener('click', async () => {
           return;
         }
         const typing = addTyping();
+        // Optimistic bubble so the user sees their message instantly;
+        // replaced with the real transcript when the server responds.
+        const pendingUser = addMsg('user', '🎙️ جاري تحويل الصوت لنص…');
         try {
           const fd = new FormData();
           fd.append('audio', blob, 'voice.webm');
@@ -1701,10 +1704,11 @@ $('mic-btn').addEventListener('click', async () => {
           const d = await r.json();
           typing.remove();
           if (!r.ok || d.error) {
+            pendingUser.remove();
             addMsg('assistant', d.error || 'حصل خطأ في معالجة الصوت.');
             return;
           }
-          addMsg('user', '🎙️ ' + (d.transcript || 'رسالة صوتية'));
+          pendingUser.textContent = '🎙️ ' + (d.transcript || 'رسالة صوتية');
           addMsg('assistant', d.reply || 'حصل خطأ غير متوقع.');
           if (d.toolsUsed?.some(t => t.includes('expense'))) loadExpenses();
           if (d.toolsUsed?.some(t => t.includes('task')))    loadTasks();
