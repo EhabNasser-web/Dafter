@@ -52,7 +52,7 @@ async function sumCost(userId, sinceDay) {
 
 /**
  * Check quotas BEFORE an AI call.
- * @param {'message'|'voice'} what
+ * @param {'message'|'voice'|'image'} what
  * @returns {Promise<{ allowed: boolean, error?: string, remaining?: number }>}
  */
 export async function checkQuota(userId, planName, what) {
@@ -77,6 +77,16 @@ export async function checkQuota(userId, planName, what) {
         };
       }
       return { allowed: true, remaining: plan.daily_voice_limit - used };
+    }
+    if (what === 'image') {
+      const used = await sumUnits(userId, 'image', todayISO());
+      if (used >= plan.daily_image_limit) {
+        return {
+          allowed: false,
+          error: `خلصت قراءات الصور اليوم (${plan.daily_image_limit} يومياً). جرّب بكرة أو اكتب نصًا.`,
+        };
+      }
+      return { allowed: true, remaining: plan.daily_image_limit - used };
     }
   } catch (err) {
     console.error('[usage] quota check failed (fail-open):', err.message);

@@ -15,6 +15,9 @@ export const plans = {
     /** Max voice transcriptions per day (×30 ≈ 60/month) */
     daily_voice_limit: 2,
 
+    /** Max image readings per day */
+    daily_image_limit: 2,
+
     /** Modules the user has access to (must match src/modules/<name>/) */
     enabled_modules: ['expenses', 'tasks', 'diary'],
 
@@ -43,6 +46,7 @@ export const plans = {
     model: process.env.GROQ_MODEL || 'openai/gpt-oss-120b',
     daily_message_limit: 100,
     daily_voice_limit: 80,
+    daily_image_limit: 20,
     enabled_modules: ['expenses', 'tasks', 'diary'],
     proactive_features: true,
     use_reviewer: true,

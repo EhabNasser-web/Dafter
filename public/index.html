@@ -1472,6 +1472,13 @@
         <div class="text-wrap">
           <textarea id="chat-input" placeholder="اكتب لدفتر هنا…" rows="1" autocomplete="off"></textarea>
         </div>
+        <button class="mic-btn cam-btn" id="cam-btn" aria-label="تصوير" style="background:var(--color-ink);">
+          <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/>
+            <circle cx="12" cy="13" r="4"/>
+          </svg>
+        </button>
+        <input type="file" id="cam-input" accept="image/*" style="display:none">
         <button class="mic-btn" id="mic-btn" aria-label="تسجيل صوتي">
           <svg id="mic-icon" viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
             <path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/>
@@ -2160,6 +2167,37 @@ $('chat-input').addEventListener('input', function() {
   this.style.height = Math.min(this.scrollHeight, 96) + 'px';
 });
 window.useHint = btn => sendText(btn.textContent);
+
+/* إرسال صورة للوكيل (كاميرا/معرض) */
+$('cam-btn').addEventListener('click', () => $('cam-input').click());
+$('cam-input').addEventListener('change', async (e) => {
+  const file = e.target.files?.[0];
+  e.target.value = '';
+  if (!file) return;
+  const pendingUser = addMsg('user', '📷 جاري قراءة الصورة…');
+  const typing = addTyping();
+  try {
+    const fd = new FormData();
+    fd.append('image', file, file.name || 'photo.jpg');
+    const r = await fetch('/api/images', { method: 'POST', body: fd });
+    const d = await r.json();
+    typing.remove();
+    if (!r.ok || d.error) {
+      pendingUser.remove();
+      addMsg('assistant', d.error || 'حصل خطأ في قراءة الصورة.');
+      return;
+    }
+    pendingUser.textContent = `📷 [${d.detectedType}] ${d.extracted}`;
+    addMsg('assistant', d.reply || 'حصل خطأ غير متوقع.');
+    if (d.toolsUsed?.some(t => t.includes('expense'))) loadExpenses();
+    if (d.toolsUsed?.some(t => t.includes('task')))    loadTasks();
+    if (d.toolsUsed?.some(t => t.includes('diary')))   loadDiary();
+  } catch {
+    typing.remove();
+    pendingUser.remove();
+    addMsg('assistant', 'تأكد من الاتصال وحاول مجدداً.');
+  }
+});
 
 /* تسجيل الصوت بالميكروفون */
 let recording = false, mr = null, chunks = [];

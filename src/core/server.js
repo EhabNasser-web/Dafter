@@ -97,6 +97,13 @@ const voiceLimiter = rateLimit({
 });
 app.use('/api/voice', voiceLimiter);
 
+const imageLimiter = rateLimit({
+  windowMs: 60 * 1000,
+  max: 10,
+  message: { error: 'صور كثيرة في وقت قصير، انتظر قليلاً.' },
+});
+app.use('/api/images', imageLimiter);
+
 const apiLimiter = rateLimit({
   windowMs: 60 * 1000,
   max: 60,
