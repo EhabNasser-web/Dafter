@@ -966,32 +966,63 @@
     }
 
     /* ══════════════════════════════════════════════════════════
-       شاشة اليوميات
+       شاشة اليوميات – صفحة دفتر بهامش ملوّن
     ══════════════════════════════════════════════════════════ */
+    .diary-day-label {
+      font-family: var(--font-display);
+      font-size: 1.1rem;
+      font-weight: 700;
+      color: var(--color-ink);
+      margin: 18px 4px 10px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    .diary-day-label::after {
+      content: '';
+      flex: 1;
+      height: 1px;
+      background: var(--color-border-strong);
+    }
     .diary-page {
       background: var(--color-surface);
-      border: 1px solid var(--color-border);
+      border: 1px solid var(--color-border-strong);
       border-radius: var(--radius-md);
-      padding: 18px 20px 18px 24px;
-      margin-bottom: 14px;
+      padding: 14px 56px 14px 16px;
+      margin-bottom: 12px;
       box-shadow: var(--shadow-sm);
       position: relative;
       overflow: hidden;
     }
-    .diary-page::before {
-      content: '';
+    .diary-margin {
       position: absolute;
-      right: 42px;
       top: 0;
       bottom: 0;
-      width: 1.5px;
-      background: rgba(181, 82, 59, 0.22);
+      right: 0;
+      width: 40px;
+      background: var(--color-surface-2);
+      border-left: 1px solid var(--color-border-strong);
     }
-    .diary-date {
-      font-family: var(--font-display);
-      font-size: 1.05rem;
-      color: var(--color-accent);
-      margin-bottom: 10px;
+    .diary-margin::after {
+      content: '';
+      position: absolute;
+      top: 0;
+      bottom: 0;
+      left: 7px;
+      width: 1.5px;
+      background: var(--color-accent);
+      opacity: 0.55;
+    }
+    .diary-meta {
+      display: flex;
+      align-items: center;
+      margin-bottom: 8px;
+    }
+    .diary-time {
+      margin-right: auto;
+      font-size: 0.74rem;
+      color: var(--color-ink-muted);
+      font-variant-numeric: tabular-nums;
     }
     .diary-content {
       font-size: 0.92rem;
@@ -999,6 +1030,23 @@
       color: var(--color-ink);
       white-space: pre-wrap;
     }
+    .diary-actions {
+      display: flex;
+      gap: 8px;
+      margin-top: 10px;
+    }
+    .diary-act-btn {
+      background: none;
+      border: none;
+      color: var(--color-ink-muted);
+      cursor: pointer;
+      padding: 4px 2px;
+      font-family: var(--font-body);
+      font-size: 0.76rem;
+      opacity: 0.6;
+      transition: opacity 0.2s, color 0.2s;
+    }
+    .diary-act-btn:hover { opacity: 1; color: var(--color-accent); }
     .mood-badge {
       display: inline-block;
       margin-top: 10px;
@@ -1503,6 +1551,9 @@
     <div id="screen-diary" class="screen">
       <div class="expenses-header-row">
         <h2 class="screen-title">دفتر اليوميات</h2>
+        <button class="btn-quick-add" id="btn-open-add-diary">
+          <span>+ إضافة يومية</span>
+        </button>
       </div>
       <div id="diary-list"><div class="spinner"></div></div>
     </div>
@@ -1593,6 +1644,34 @@
       <input class="field-input" id="manual-task-due" type="date" style="text-align:right;" dir="ltr">
     </div>
     <button class="btn-primary" id="btn-submit-task">حفظ المهمة</button>
+  </div>
+</div>
+
+<!-- ════════════════════════════════════
+     نافذة إضافة/تعديل يومية يدوية (Modal)
+════════════════════════════════════ -->
+<div class="modal-overlay" id="add-diary-modal">
+  <div class="modal-box">
+    <div class="modal-header">
+      <h3 id="diary-modal-title">يومية جديدة</h3>
+      <button class="modal-close" id="btn-close-diary-modal">✕</button>
+    </div>
+    <div>
+      <label class="field-label" for="manual-diary-content">احكي عن يومك</label>
+      <textarea class="field-input" id="manual-diary-content" rows="4" placeholder="اكتب ما حدث اليوم…" style="text-align:right; direction:rtl; resize:vertical;"></textarea>
+    </div>
+    <div>
+      <label class="field-label" for="manual-diary-mood">مزاجك (اختياري)</label>
+      <select class="field-input" id="manual-diary-mood" style="direction:rtl; text-align:right;">
+        <option value="">بدون تحديد</option>
+        <option value="happy">😊 سعيد</option>
+        <option value="sad">😢 حزين</option>
+        <option value="neutral">😐 عادي</option>
+        <option value="anxious">😰 قلقان</option>
+        <option value="excited">🤩 متحمس</option>
+      </select>
+    </div>
+    <button class="btn-primary" id="btn-submit-diary">حفظ اليومية</button>
   </div>
 </div>
 
@@ -2383,11 +2462,17 @@ $('btn-submit-task').addEventListener('click', async () => {
 /* ─────────────────────────────────────────────────────────────
    شاشة اليوميات (Diary)
 ───────────────────────────────────────────────────────────── */
+function fmtDay(d) {
+  return new Date(d).toLocaleDateString('ar-EG', { day: 'numeric', month: 'long', year: 'numeric' });
+}
+function fmtTime(d) {
+  return new Date(d).toLocaleTimeString('ar-EG', { hour: '2-digit', minute: '2-digit' });
+}
 async function loadDiary() {
   const list = $('diary-list');
   list.innerHTML = '<div class="spinner"></div>';
   try {
-    const r = await fetch('/api/diary?limit=14').then(r => r.json());
+    const r = await fetch('/api/diary?limit=30').then(r => r.json());
     if (!r.data?.length) {
       list.innerHTML = `
         <div class="empty-state">
@@ -2396,17 +2481,114 @@ async function loadDiary() {
         </div>`;
       return;
     }
-    list.innerHTML = r.data.map(d => `
-      <div class="diary-page">
-        <div class="diary-date">${fmtDate(d.day)}</div>
-        <div class="diary-content">${d.content}</div>
-        ${d.mood ? `<span class="mood-badge">${MOODS[d.mood] ?? d.mood}</span>` : ''}
-      </div>
-    `).join('');
+    // Group by day: date label above each day's cards
+    const groups = {};
+    for (const d of r.data) {
+      (groups[d.day] = groups[d.day] || []).push(d);
+    }
+    const frag = document.createElement('div');
+    for (const day of Object.keys(groups).sort().reverse()) {
+      const label = document.createElement('div');
+      label.className = 'diary-day-label';
+      label.textContent = fmtDay(day);
+      frag.appendChild(label);
+      for (const d of groups[day]) {
+        const card = document.createElement('div');
+        card.className = 'diary-page';
+        const margin = document.createElement('div');
+        margin.className = 'diary-margin';
+        card.appendChild(margin);
+        const meta = document.createElement('div');
+        meta.className = 'diary-meta';
+        const time = document.createElement('span');
+        time.className = 'diary-time';
+        time.textContent = fmtTime(d.created_at);
+        meta.appendChild(time);
+        card.appendChild(meta);
+        const content = document.createElement('div');
+        content.className = 'diary-content';
+        content.textContent = d.content;
+        card.appendChild(content);
+        if (d.mood) {
+          const mood = document.createElement('span');
+          mood.className = 'mood-badge';
+          mood.textContent = MOODS[d.mood] ?? d.mood;
+          card.appendChild(mood);
+        }
+        const actions = document.createElement('div');
+        actions.className = 'diary-actions';
+        const editBtn = document.createElement('button');
+        editBtn.className = 'diary-act-btn';
+        editBtn.textContent = 'تعديل';
+        editBtn.onclick = () => openDiaryModal(d);
+        const delBtn = document.createElement('button');
+        delBtn.className = 'diary-act-btn';
+        delBtn.textContent = 'حذف';
+        delBtn.onclick = () => deleteDiary(d.id);
+        actions.appendChild(editBtn);
+        actions.appendChild(delBtn);
+        card.appendChild(actions);
+        frag.appendChild(card);
+      }
+    }
+    list.innerHTML = '';
+    list.appendChild(frag);
   } catch {
     list.innerHTML = '<div class="empty-state"><p>خطأ في تحميل اليوميات.</p></div>';
   }
 }
+
+async function deleteDiary(id) {
+  if (!confirm('هل تريد حذف هذه اليومية؟')) return;
+  try {
+    await fetch(`/api/diary/${id}`, { method: 'DELETE' });
+    toast('تم حذف اليومية');
+    loadDiary();
+  } catch {
+    toast('خطأ أثناء الحذف');
+  }
+}
+
+/* نافذة إضافة/تعديل يومية */
+let editingDiaryId = null;
+function openDiaryModal(entry = null) {
+  editingDiaryId = entry?.id || null;
+  $('diary-modal-title').textContent = entry ? 'تعديل اليومية' : 'يومية جديدة';
+  $('manual-diary-content').value = entry?.content || '';
+  $('manual-diary-mood').value = entry?.mood || '';
+  $('btn-submit-diary').textContent = entry ? 'حفظ التعديل' : 'حفظ اليومية';
+  $('add-diary-modal').classList.add('open');
+}
+$('btn-open-add-diary').addEventListener('click', () => openDiaryModal());
+$('btn-close-diary-modal').addEventListener('click', () => {
+  $('add-diary-modal').classList.remove('open');
+});
+$('btn-submit-diary').addEventListener('click', async () => {
+  const content = $('manual-diary-content').value.trim();
+  if (!content) { alert('اكتب نص اليومية.'); return; }
+  const mood = $('manual-diary-mood').value || null;
+  $('btn-submit-diary').disabled = true;
+  try {
+    const url = editingDiaryId ? `/api/diary/${editingDiaryId}` : '/api/diary';
+    const r = await fetch(url, {
+      method: editingDiaryId ? 'PATCH' : 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ content, mood }),
+    });
+    const d = await r.json();
+    if (d.ok || d.data) {
+      toast(editingDiaryId ? '✅ تم حفظ التعديل' : '✅ تم حفظ اليومية');
+      $('add-diary-modal').classList.remove('open');
+      loadDiary();
+    } else {
+      toast(d.error || 'خطأ في الحفظ');
+    }
+  } catch {
+    toast('خطأ في الاتصال');
+  }
+  $('btn-submit-diary').disabled = false;
+  $('btn-submit-diary').textContent = 'حفظ اليومية';
+});
 
 /* ─── Phase 2.3: weekly summary + export ─── */
 $('btn-weekly-summary')?.addEventListener('click', async () => {
