@@ -6,14 +6,14 @@
 
 export const plans = {
   free: {
-    /** Same capable model as pro – limited by message count instead */
+    /** Same capable model as pro – limited by counts instead */
     model: process.env.GROQ_MODEL || 'openai/gpt-oss-120b',
 
-    /** Max agent messages the user can send per calendar day */
+    /** Max agent messages per day (×30 ≈ 300/month) */
     daily_message_limit: 10,
 
-    /** Cumulative voice transcription minutes allowed per month */
-    voice_minutes_per_month: 10,
+    /** Max voice transcriptions per day (×30 ≈ 60/month) */
+    daily_voice_limit: 2,
 
     /** Modules the user has access to (must match src/modules/<name>/) */
     enabled_modules: ['expenses', 'tasks', 'diary'],
@@ -31,8 +31,8 @@ export const plans = {
   pro: {
     /** Most capable available on Groq for user's key */
     model: process.env.GROQ_MODEL || 'openai/gpt-oss-120b',
-    daily_message_limit: 300,
-    voice_minutes_per_month: 120,
+    daily_message_limit: 100,
+    daily_voice_limit: 80,
     enabled_modules: ['expenses', 'tasks', 'diary'],
     proactive_features: true,
     use_reviewer: true,

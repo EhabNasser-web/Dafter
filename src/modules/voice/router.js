@@ -115,7 +115,8 @@ router.post('/', requireAuth, handleUpload, async (req, res) => {
     });
 
     // Fire-and-forget accounting
-    logUsage(req.session.userId, 'voice', durationSeconds ?? 0, sttCostEstimate(durationSeconds ?? 0));
+    logUsage(req.session.userId, 'voice', 1, 0);
+    logUsage(req.session.userId, 'voice_seconds', durationSeconds ?? 0, sttCostEstimate(durationSeconds ?? 0));
     logUsage(req.session.userId, 'message', 1, 0);
     if (result.usage) {
       const { model, promptTokens, completionTokens } = result.usage;

@@ -1733,9 +1733,9 @@ async function loadAdminUsers() {
         const msgPart = lim.dailyMessages != null
           ? `${stats.messagesToday}/${lim.dailyMessages} رسالة اليوم`
           : `${stats.messagesToday} رسالة اليوم`;
-        const voicePart = lim.voiceMonthSec != null
-          ? `${Math.round(stats.voiceMonthSec)}/${lim.voiceMonthSec} ث صوت شهريًا`
-          : `${Math.round(stats.voiceMonthSec)} ث صوت`;
+        const voicePart = lim.dailyVoice != null
+          ? `${stats.voiceToday ?? 0}/${lim.dailyVoice} صوتي اليوم`
+          : `${stats.voiceToday ?? 0} صوتي اليوم`;
         s.textContent = `📊 ${msgPart} · ${voicePart} · ≈$${Number(stats.costMonthUSD).toFixed(4)}`;
         div.insertBefore(s, div.querySelector('div:last-child'));
       }

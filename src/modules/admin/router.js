@@ -113,7 +113,7 @@ adminRouter.get('/usage/summary', async (_req, res) => {
           ...(await getUsageSummary(u.id)),
           limits: {
             dailyMessages: plan.daily_message_limit,
-            voiceMonthSec: plan.voice_minutes_per_month * 60,
+            dailyVoice: plan.daily_voice_limit,
           },
         };
       })

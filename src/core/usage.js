@@ -69,15 +69,14 @@ export async function checkQuota(userId, planName, what) {
       return { allowed: true, remaining: plan.daily_message_limit - used };
     }
     if (what === 'voice') {
-      const usedSec = await sumUnits(userId, 'voice', monthStartISO());
-      const limitSec = plan.voice_minutes_per_month * 60;
-      if (usedSec >= limitSec) {
+      const used = await sumUnits(userId, 'voice', todayISO());
+      if (used >= plan.daily_voice_limit) {
         return {
           allowed: false,
-          error: `خلصت دقائق الصوت الشهرية (${plan.voice_minutes_per_month} دقيقة). اكتب نصًا بدل الصوت لحد أول الشهر.`,
+          error: `خلصت التفريغات الصوتية اليوم (${plan.daily_voice_limit} يومياً). اكتب نصًا بدل الصوت لبكرة.`,
         };
       }
-      return { allowed: true, remaining: Math.floor(limitSec - usedSec) };
+      return { allowed: true, remaining: plan.daily_voice_limit - used };
     }
   } catch (err) {
     console.error('[usage] quota check failed (fail-open):', err.message);
@@ -87,10 +86,11 @@ export async function checkQuota(userId, planName, what) {
 
 /** Usage snapshot for the admin panel. */
 export async function getUsageSummary(userId) {
-  const [messagesToday, voiceMonthSec, costMonth] = await Promise.all([
+  const [messagesToday, voiceToday, voiceMonthSec, costMonth] = await Promise.all([
     sumUnits(userId, 'message', todayISO()),
-    sumUnits(userId, 'voice', monthStartISO()),
+    sumUnits(userId, 'voice', todayISO()),
+    sumUnits(userId, 'voice_seconds', monthStartISO()),
     sumCost(userId, monthStartISO()),
   ]);
-  return { messagesToday, voiceMonthSec, costMonthUSD: costMonth };
+  return { messagesToday, voiceToday, voiceMonthSec, costMonthUSD: costMonth };
 }
