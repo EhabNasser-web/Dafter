@@ -1729,7 +1729,14 @@ async function loadAdminUsers() {
       if (stats) {
         const s = document.createElement('div');
         s.style.cssText = 'font-size:0.75rem; color:var(--color-ink-muted);';
-        s.textContent = `📊 اليوم: ${stats.messagesToday} رسالة · الشهر: ${Math.round(stats.voiceMonthSec)} ث صوت · ≈$${Number(stats.costMonthUSD).toFixed(4)}`;
+        const lim = stats.limits || {};
+        const msgPart = lim.dailyMessages != null
+          ? `${stats.messagesToday}/${lim.dailyMessages} رسالة اليوم`
+          : `${stats.messagesToday} رسالة اليوم`;
+        const voicePart = lim.voiceMonthSec != null
+          ? `${Math.round(stats.voiceMonthSec)}/${lim.voiceMonthSec} ث صوت شهريًا`
+          : `${Math.round(stats.voiceMonthSec)} ث صوت`;
+        s.textContent = `📊 ${msgPart} · ${voicePart} · ≈$${Number(stats.costMonthUSD).toFixed(4)}`;
         div.insertBefore(s, div.querySelector('div:last-child'));
       }
       if (u.reset_token) div.querySelector('code').textContent = u.reset_token;

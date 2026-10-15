@@ -15,6 +15,7 @@ import { db } from '../../db/index.js';
 import { users } from '../../db/schema.js';
 import { requireAdmin } from '../../core/auth.js';
 import { getUsageSummary } from '../../core/usage.js';
+import { getPlan } from '../../../config/plans.js';
 import { eq } from 'drizzle-orm';
 
 export const adminRouter = Router();
@@ -105,7 +106,17 @@ adminRouter.get('/usage/summary', async (_req, res) => {
       .orderBy(users.created_at);
 
     const rows = await Promise.all(
-      all.map(async (u) => ({ ...u, ...(await getUsageSummary(u.id)) }))
+      all.map(async (u) => {
+        const plan = getPlan(u.plan);
+        return {
+          ...u,
+          ...(await getUsageSummary(u.id)),
+          limits: {
+            dailyMessages: plan.daily_message_limit,
+            voiceMonthSec: plan.voice_minutes_per_month * 60,
+          },
+        };
+      })
     );
     const totals = rows.reduce(
       (acc, r) => ({
