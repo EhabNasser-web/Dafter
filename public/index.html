@@ -1675,7 +1675,14 @@ $('mic-btn').addEventListener('click', async () => {
   if (!recording) {
     try {
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-      mr = new MediaRecorder(stream);
+      let mrOptions = {};
+      try {
+        // Higher bitrate = clearer speech for Whisper (falls back silently if unsupported)
+        mrOptions = { audioBitsPerSecond: 128000 };
+        mr = new MediaRecorder(stream, mrOptions);
+      } catch {
+        mr = new MediaRecorder(stream);
+      }
       chunks = [];
       mr.ondataavailable = e => chunks.push(e.data);
       mr.onstop = async () => {

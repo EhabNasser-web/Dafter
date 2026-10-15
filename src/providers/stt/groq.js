@@ -28,13 +28,19 @@ export async function transcribeWithGroq(audioBuffer, mimeType = 'audio/webm', f
     throw new Error('GROQ_API_KEY is not set in environment.');
   }
 
+  // Hint prompt in Egyptian Arabic: steers Whisper toward dialect vocabulary
+  // (numbers, currency, daily-life words) instead of MSA guesses.
+  const DIALECT_HINT = 'صرفت خمسين جنيه على الأكل النهارده، وقبضت المرتب، فكرني أكلم الدكتور بكرة، أنا مبسوط ومتحمس، عايز أسجل مهمة ويومية جديدة';
+
   return withRetry(
     async () => {
       const form = new FormData();
       form.append('file', audioBuffer, { filename, contentType: mimeType });
       form.append('model', MODEL);
       form.append('language', 'ar'); // force Arabic – speeds up and improves accuracy
+      form.append('prompt', process.env.WHISPER_PROMPT ?? DIALECT_HINT);
       form.append('response_format', 'verbose_json'); // gives us duration
+      form.append('temperature', '0'); // deterministic – less creative mishearing
 
       const res = await fetch(GROQ_STT_URL, {
         method: 'POST',
