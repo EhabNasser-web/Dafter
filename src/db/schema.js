@@ -140,6 +140,21 @@ export const usage = pgTable('usage', {
   created_at: timestamp('created_at', { withTimezone: true }).notNull().default(sql`now()`),
 });
 
+// ─── jobs (Phase 2.3 – background jobs) ──────────────────────────────────────
+export const jobs = pgTable('jobs', {
+  id:       uuid('id').primaryKey().default(sql`gen_random_uuid()`),
+  user_id:  uuid('user_id').references(() => users.id, { onDelete: 'cascade' }),
+  kind:     varchar('kind', { length: 40 }).notNull(),
+  payload:  jsonb('payload').notNull().default({}),
+  status:   varchar('status', { length: 20 }).notNull().default('pending'),
+  attempts: integer('attempts').notNull().default(0),
+  max_attempts: integer('max_attempts').notNull().default(3),
+  run_after: timestamp('run_after', { withTimezone: true }).notNull().default(sql`now()`),
+  last_error: text('last_error'),
+  created_at: timestamp('created_at', { withTimezone: true }).notNull().default(sql`now()`),
+  updated_at: timestamp('updated_at', { withTimezone: true }).notNull().default(sql`now()`),
+});
+
 // ─── push_subscriptions ───────────────────────────────────────────────────────
 export const pushSubscriptions = pgTable('push_subscriptions', {
   id:         uuid('id').primaryKey().defaultRandom(),

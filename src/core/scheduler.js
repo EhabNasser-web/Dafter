@@ -9,6 +9,7 @@ import cron from 'node-cron';
 import { db } from '../db/index.js';
 import { users, conversations, messages } from '../db/schema.js';
 import { eq, desc, and, lte, ne, isNotNull } from 'drizzle-orm';
+import { runDueJobs, scanReminders, scanWeeklySummaries } from './jobs.js';
 import { getRegistry } from './moduleLoader.js';
 import { sendPushToUser } from '../providers/push/index.js';
 import plans from '../../config/plans.js';
@@ -218,4 +219,17 @@ export function startScheduler() {
     runExpiryJob();
   }, { timezone });
   runExpiryJob();
+
+  // Phase 2.3 – jobs runner every 15 min, reminder scan daily 08:00,
+  // weekly summaries every Friday 20:00 (all Africa/Cairo)
+  console.log('[scheduler] ⏰ Scheduling jobs runner + reminder scan + weekly summaries');
+  cron.schedule('*/15 * * * *', () => {
+    runDueJobs().catch((e) => console.error('[scheduler] jobs runner:', e.message));
+  }, { timezone });
+  cron.schedule('0 8 * * *', () => {
+    scanReminders().then(() => runDueJobs()).catch((e) => console.error('[scheduler] reminders:', e.message));
+  }, { timezone });
+  cron.schedule('0 20 * * 5', () => {
+    scanWeeklySummaries().then(() => runDueJobs()).catch((e) => console.error('[scheduler] weekly:', e.message));
+  }, { timezone });
 }

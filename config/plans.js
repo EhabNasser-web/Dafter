@@ -26,6 +26,13 @@ export const plans = {
 
     /** Skip the Gemini reviewer step to save cost on free tier */
     use_reviewer: false,
+
+    /** Phase 2.3 automations available on this plan */
+    automations: {
+      weekly_summary: false,
+      reminders: false,
+      export: true,
+    },
   },
 
   pro: {
@@ -36,6 +43,11 @@ export const plans = {
     enabled_modules: ['expenses', 'tasks', 'diary'],
     proactive_features: true,
     use_reviewer: true,
+    automations: {
+      weekly_summary: true,
+      reminders: true,
+      export: true,
+    },
   },
 };
 

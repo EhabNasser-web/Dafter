@@ -1287,6 +1287,24 @@
         </div>
       </div>
 
+      <!-- الملخص الأسبوعي والتصدير (Phase 2.3) -->
+      <div>
+        <div class="drawer-section-title">
+          <span>📊</span>
+          <span>ملخصك وبياناتك</span>
+        </div>
+        <div class="profile-card" style="gap:10px;">
+          <div id="weekly-summary-box" style="font-size:0.84rem; line-height:1.9; white-space:pre-wrap; display:none;"></div>
+          <button class="btn-primary" id="btn-weekly-summary" style="padding:9px; font-size:0.86rem;">
+            عرض ملخص الأسبوع
+          </button>
+          <div style="display:flex; gap:8px;">
+            <button class="cat-pill" id="btn-export-json" style="flex:1; padding:8px; font-size:0.8rem;">تصدير JSON</button>
+            <button class="cat-pill" id="btn-export-csv" style="flex:1; padding:8px; font-size:0.8rem;">مصاريف CSV</button>
+          </div>
+        </div>
+      </div>
+
       <!-- إعدادات إشعارات التشيك إن اليومي -->
       <div>
         <div class="drawer-section-title">
@@ -2313,6 +2331,29 @@ async function loadDiary() {
     list.innerHTML = '<div class="empty-state"><p>خطأ في تحميل اليوميات.</p></div>';
   }
 }
+
+/* ─── Phase 2.3: weekly summary + export ─── */
+$('btn-weekly-summary')?.addEventListener('click', async () => {
+  const box = $('weekly-summary-box');
+  const btn = $('btn-weekly-summary');
+  btn.disabled = true;
+  btn.textContent = 'جاري الحساب…';
+  try {
+    const r = await fetch('/api/summary/weekly').then(r => r.json());
+    if (r.ok) {
+      box.textContent = r.text;
+      box.style.display = '';
+    } else {
+      toast('⚠️ ' + (r.error || 'تعذّر حساب الملخص.'));
+    }
+  } catch {
+    toast('خطأ في الاتصال.');
+  }
+  btn.disabled = false;
+  btn.textContent = 'عرض ملخص الأسبوع';
+});
+$('btn-export-json')?.addEventListener('click', () => { window.location = '/api/export/json'; });
+$('btn-export-csv')?.addEventListener('click', () => { window.location = '/api/export/expenses.csv'; });
 
 /* ─────────────────────────────────────────────────────────────
    PWA Service Worker & Web Push Notifications
