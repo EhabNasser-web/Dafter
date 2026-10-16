@@ -1529,18 +1529,8 @@
         </div>
       </div>
 
-      <!-- فلاتر الفئات السريعة -->
-      <div class="category-pills" id="category-pills">
-        <button class="cat-pill active" data-cat="all">الكل</button>
-        <button class="cat-pill" data-cat="أكل">🍔 أكل وشرب</button>
-        <button class="cat-pill" data-cat="مواصلات">🚗 مواصلات</button>
-        <button class="cat-pill" data-cat="فواتير">📃 فواتير</button>
-        <button class="cat-pill" data-cat="تسوق">🛍️ تسوق</button>
-        <button class="cat-pill" data-cat="صحة">💊 صحة</button>
-        <button class="cat-pill" data-cat="تعليم">📚 تعليم</button>
-        <button class="cat-pill" data-cat="راتب">💰 دخل وراتب</button>
-        <button class="cat-pill" data-cat="أخرى">📦 أخرى</button>
-      </div>
+      <!-- فهرس التصنيفات (يُبنى من السيرفر) -->
+      <div class="category-pills" id="category-pills"></div>
 
       <!-- قائمة الفواتير / الإيصالات الورقية -->
       <div class="receipt-feed" id="expenses-list">
@@ -1616,17 +1606,12 @@
 
     <div>
       <label class="field-label" for="manual-category">التصنيف</label>
-      <select class="field-input" id="manual-category" style="direction:rtl; text-align:right;">
-        <option value="أكل">🍔 أكل وشرب</option>
-        <option value="مواصلات">🚗 مواصلات</option>
-        <option value="فواتير">📃 فواتير واشتراكات</option>
-        <option value="تسوق">🛍️ تسوق ومشتريات</option>
-        <option value="صحة">💊 صحة وعلاج</option>
-        <option value="تعليم">📚 كورسات وتعليم</option>
-        <option value="إيجار">🏠 إيجار وسكن</option>
-        <option value="راتب">💰 مرتب / عمل حر</option>
-        <option value="أخرى">📦 أخرى</option>
-      </select>
+      <select class="field-input" id="manual-category" style="direction:rtl; text-align:right;"></select>
+    </div>
+
+    <div id="new-category-wrap" style="display:none;">
+      <label class="field-label" for="manual-new-category">اسم التصنيف الجديد</label>
+      <input class="field-input" id="manual-new-category" placeholder="مثلاً: بقالة" style="text-align:right;">
     </div>
 
     <div>
@@ -1725,6 +1710,10 @@ const THEME_ICONS = {
   contrast: CAT_EMOJIS,
 };
 function catEmoji(cat) {
+  if (serverCategories) {
+    const found = serverCategories.find(c => c.name === cat);
+    if (found) return found.emoji;
+  }
   const theme = document.documentElement.getAttribute('data-theme') || 'notebook';
   return (THEME_ICONS[theme] || CAT_EMOJIS)[cat] || '📦';
 }
@@ -1736,6 +1725,52 @@ const MOODS = {
 
 let allExpensesData = [];
 let activeCategoryFilter = 'all';
+let serverCategories = null; // [{name, emoji}] from /api/expenses/categories
+
+async function loadCategories() {
+  try {
+    const r = await fetch('/api/expenses/categories').then(r => r.json());
+    if (r.ok && Array.isArray(r.data)) serverCategories = r.data;
+  } catch { /* fallback below */ }
+  const cats = serverCategories || Object.entries(CAT_EMOJIS).map(([name, emoji]) => ({ name, emoji }));
+  const pills = $('category-pills');
+  pills.innerHTML = '';
+  const allBtn = document.createElement('button');
+  allBtn.className = 'cat-pill active';
+  allBtn.dataset.cat = 'all';
+  allBtn.textContent = 'الكل';
+  pills.appendChild(allBtn);
+  for (const c of cats) {
+    const b = document.createElement('button');
+    b.className = 'cat-pill';
+    b.dataset.cat = c.name;
+    b.textContent = `${c.emoji} ${c.name}`;
+    pills.appendChild(b);
+  }
+  pills.querySelectorAll('.cat-pill').forEach(btn => {
+    btn.addEventListener('click', () => {
+      pills.querySelectorAll('.cat-pill').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      activeCategoryFilter = btn.dataset.cat;
+      renderReceipts();
+    });
+  });
+  const sel = $('manual-category');
+  sel.innerHTML = '';
+  for (const c of cats) {
+    const o = document.createElement('option');
+    o.value = c.name;
+    o.textContent = `${c.emoji} ${c.name}`;
+    sel.appendChild(o);
+  }
+  const addOpt = document.createElement('option');
+  addOpt.value = '__new__';
+  addOpt.textContent = '＋ تصنيف جديد…';
+  sel.appendChild(addOpt);
+}
+$('manual-category').addEventListener('change', () => {
+  $('new-category-wrap').style.display = $('manual-category').value === '__new__' ? '' : 'none';
+});
 
 function fmt(n, cur = 'EGP') {
   const unit = { EGP: 'جنيه' }[cur] || cur;
@@ -1848,6 +1883,7 @@ async function showApp() {
   if (badge) badge.textContent = plan === 'pro' ? 'خطة Pro' : 'خطة مجانية';
   await refreshSession();
   await setupSubscribeButton();
+  await loadCategories();
   checkPushSubscription();
   loadScreen(currentScreen);
 }
@@ -2424,15 +2460,7 @@ function renderReceipts() {
   `).join('');
 }
 
-// فلاتر التصنيفات
-document.querySelectorAll('.cat-pill').forEach(btn => {
-  btn.addEventListener('click', () => {
-    document.querySelectorAll('.cat-pill').forEach(b => b.classList.remove('active'));
-    btn.classList.add('active');
-    activeCategoryFilter = btn.dataset.cat;
-    renderReceipts();
-  });
-});
+/* (فلاتر التصنيفات تُبنى ديناميكيًا في loadCategories) */
 
 async function deleteExpense(id) {
   if (!confirm('هل تريد حذف هذه المعاملة؟')) return;
@@ -2472,7 +2500,9 @@ $('btn-submit-expense').addEventListener('click', async () => {
     alert('يرجى إدخال مبلغ صحيح.');
     return;
   }
-  const category = $('manual-category').value;
+  const category = $('manual-category').value === '__new__'
+    ? ($('manual-new-category').value.trim() || 'أخرى')
+    : $('manual-category').value;
   const note = $('manual-note').value.trim();
 
   $('btn-submit-expense').disabled = true;
@@ -2489,6 +2519,8 @@ $('btn-submit-expense').addEventListener('click', async () => {
       toast('✅ تم تسجيل المعاملة بنجاح');
       $('manual-amount').value = '';
       $('manual-note').value = '';
+      $('manual-new-category').value = '';
+      $('new-category-wrap').style.display = 'none';
       $('add-expense-modal').classList.remove('open');
       loadExpenses();
     } else {

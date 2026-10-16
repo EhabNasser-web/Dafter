@@ -6,8 +6,14 @@
 import { Router } from 'express';
 import { requireAuth } from '../../core/auth.js';
 import { tools } from './tools.js';
+import { EXPENSE_CATEGORIES } from '../../../config/categories.js';
 
 export const router = Router();
+
+// GET /api/expenses/categories – canonical list for pills + manual form
+router.get('/categories', requireAuth, (_req, res) => {
+  res.json({ ok: true, data: EXPENSE_CATEGORIES });
+});
 
 // GET /api/expenses – list
 router.get('/', requireAuth, async (req, res) => {

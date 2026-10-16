@@ -7,6 +7,7 @@
 import { db } from '../../db/index.js';
 import { expenses } from '../../db/schema.js';
 import { eq, desc, gte, lte, and, sql } from 'drizzle-orm';
+import { CATEGORY_NAMES } from '../../../config/categories.js';
 
 export const tools = [
   {
@@ -17,7 +18,7 @@ export const tools = [
       properties: {
         amount:     { type: 'number',  description: 'المبلغ (بالأرقام فقط، موجب دائماً)' },
         type:       { type: 'string',  enum: ['expense', 'income'], description: 'نوع العملية: expense = مصروف، income = دخل' },
-        category:   { type: 'string',  description: 'التصنيف: أكل، مواصلات، فواتير، ترفيه، تسوق، صحة، تعليم، إيجار، راتب، عمل، أخرى' },
+        category:   { type: 'string',  description: `التصنيف – القائمة المعتمدة: ${CATEGORY_NAMES.join('، ')}. استخدم واحداً منها دائماً. مسموح بتصنيف جديد فقط لو اقترحته على المستخدم ووافق صراحة (مثال: "بقالة" يقترح ولا يُحفظ إلا بـ"أيوه").` },
         note:       { type: 'string',  description: 'ملاحظة اختيارية عن العملية' },
         happened_at:{ type: 'string',  description: 'تاريخ ووقت العملية بصيغة ISO 8601 (اختياري، لو مش موجود استخدم الوقت الحالي)' },
         currency:   { type: 'string',  description: 'العملة (افتراضي: EGP)', default: 'EGP' },
