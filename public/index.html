@@ -598,6 +598,9 @@
       justify-content: center;
       box-shadow: 0 0 0 0 var(--mic-ring);
       transition: transform 0.12s, background var(--transition), box-shadow 0.3s;
+      touch-action: none; /* ضروري: يمنع المتصفح من خطف السحب كتمرير */
+      user-select: none;
+      -webkit-user-select: none;
     }
     .mic-btn.recording {
       background: #c0392b;
@@ -3062,11 +3065,11 @@ function showLockTray(on) {
   });
   btn.addEventListener('pointermove', (e) => {
     if (!voice.recording || voice.locked || !e.clientX) return;
-    if (e.clientX - pressX > 60) setLockedUI(true); // سحب يمين = قفل
+    if (e.clientX - pressX > 48) setLockedUI(true); // سحب يمين = قفل
   });
   const release = (e) => {
     if (!voice.recording) return;
-    if (voice.locked) return; // مقفول: يستمر حتى نقرة الإيقاف
+    if (voice.locked) return; // مقفول: يستمر حتى نقرة الإيقاف (بما فيها pointercancel)
     e?.preventDefault?.();
     showLockTray(false);
     finishRecording(false); // +800ms ذيل ثم تفريغ
