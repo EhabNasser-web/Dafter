@@ -10,16 +10,19 @@
  */
 
 import { transcribeWithGroq } from './groq.js';
+import { transcribeWithGemini } from './gemini.js';
 
 const PROVIDERS = {
+  gemini: transcribeWithGemini,
   groq: transcribeWithGroq,
 };
 
 /**
  * @returns {import('./interface.js').SttProvider}
+ * Signature: (audioBuffer, mimeType, filename?, opts?: { prompt?: string })
  */
 export function getSttProvider() {
-  const name = process.env.STT_PROVIDER ?? 'groq';
+  const name = process.env.STT_PROVIDER ?? 'gemini';
   const provider = PROVIDERS[name];
   if (!provider) {
     throw new Error(`Unknown STT_PROVIDER "${name}". Available: ${Object.keys(PROVIDERS).join(', ')}`);
