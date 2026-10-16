@@ -639,15 +639,31 @@
     }
     .rec-timer.on { display: block; }
     .rec-timer.warn { background: #c0392b; color: #fff; }
-    .mode-btn {
-      background: none;
-      border: none;
-      color: var(--color-ink-muted);
-      font-size: 0.68rem;
-      cursor: pointer;
-      padding: 2px 4px;
+    /* درج القفل بأسلوب واتساب: أسهم متحركة تشير للقفل */
+    .lock-tray {
+      display: none;
+      align-items: center;
+      gap: 4px;
+      background: var(--color-surface);
+      border: 1px solid var(--color-border);
+      border-radius: 20px;
+      padding: 6px 12px 6px 8px;
+      margin-inline-end: 6px;
+      flex-shrink: 0;
     }
-    .mode-btn.active { color: var(--color-accent); font-weight: 700; }
+    .lock-tray.on { display: flex; }
+    .lock-chevrons { display: inline-flex; color: var(--color-ink-muted); font-weight: 800; }
+    .lock-chevrons b { animation: chevSlide 0.9s ease-in-out infinite; font-size: 0.95rem; line-height: 1; }
+    .lock-chevrons b:nth-child(2) { animation-delay: 0.15s; }
+    .lock-chevrons b:nth-child(3) { animation-delay: 0.3s; }
+    @keyframes chevSlide {
+      0%, 100% { opacity: 0.25; transform: translateX(0); }
+      50%      { opacity: 1;    transform: translateX(4px); }
+    }
+    .lock-icon { font-size: 1rem; transition: transform 0.18s ease; }
+    .lock-tray.locked { border-color: var(--color-accent); }
+    .lock-tray.locked .lock-chevrons { display: none; }
+    .lock-tray.locked .lock-icon { transform: scale(1.15); }
     /* حالة المعالجة مع زر الإلغاء */
     .processing-box {
       align-self: flex-start;
@@ -1680,7 +1696,10 @@
           </svg>
         </button>
         <input type="file" id="cam-input" accept="image/*" style="display:none">
-        <button class="mode-btn" id="mic-mode-btn" title="التبديل بين الضغط المستمر والنقرة">مستمر</button>
+        <div class="lock-tray" id="lock-tray" aria-hidden="true">
+          <span class="lock-icon" id="lock-icon">🔓</span>
+          <span class="lock-chevrons"><b>›</b><b>›</b><b>›</b></span>
+        </div>
         <div class="mic-wrap">
           <span class="mic-on-dot" id="mic-on-dot" title="الميكروفون مفتوح"></span>
           <span class="rec-timer" id="rec-timer">0:00</span>
@@ -2646,7 +2665,6 @@ $('btn-send-image').addEventListener('click', async () => {
 const voice = {
   stream: null, ctx: null, analyser: null, dest: null,
   gain: null, comp: null, hp: null,
-  mode: localStorage.getItem('daftar_voice_mode') || 'hold',
   recording: false, mr: null, mrRaw: null, chunks: [], chunksRaw: [],
   noise: 'quiet', recStart: 0, timerId: null, autoStopId: null,
   currentAbort: null,
@@ -2856,6 +2874,7 @@ function finishRecording(endNow = false) {
 }
 
 function onRecorderStop() {
+  showLockTray(false);
   const type = voice.mr?.mimeType || 'audio/webm';
   const blob = new Blob(voice.chunks, { type });
   voice.chunks = [];
@@ -3019,41 +3038,48 @@ function showVoiceDraft({ rawText, text, blob, rawBlob = null }) {
   area.scrollTop = area.scrollHeight;
 }
 
-/* ربط زر الميك: ضغط مستمر (افتراضي) أو نقرة/نقرة */
-function paintMicMode() {
-  const b = $('mic-mode-btn');
-  if (b) {
-    b.textContent = voice.mode === 'hold' ? 'مستمر' : 'نقرة';
-    b.classList.toggle('active', voice.mode === 'tap');
-  }
+/* ربط زر الميك: ضغط مستمر = تسجيل، إفلات = إرسال، سحب يمين = قفل */
+function setLockedUI(locked) {
+  voice.locked = locked;
+  $('lock-tray')?.classList.toggle('locked', locked);
+  const icon = $('lock-icon');
+  if (icon) icon.textContent = locked ? '🔒' : '🔓';
 }
-paintMicMode();
-$('mic-mode-btn')?.addEventListener('click', () => {
-  voice.mode = voice.mode === 'hold' ? 'tap' : 'hold';
-  localStorage.setItem('daftar_voice_mode', voice.mode);
-  paintMicMode();
-  toast(voice.mode === 'hold' ? 'وضع الضغط المستمر: اضغط واستمر' : 'وضع النقرة: نقرة للبدء ونقرة للإيقاف');
-});
+function showLockTray(on) {
+  $('lock-tray')?.classList.toggle('on', on);
+  if (!on) setLockedUI(false);
+}
 (function bindMicButton() {
   const btn = $('mic-btn');
+  let pressX = 0;
   btn.addEventListener('pointerdown', (e) => {
-    if (voice.mode !== 'hold' || e.button !== undefined && e.button !== 0) return;
+    if (e.button !== undefined && e.button !== 0) return;
     e.preventDefault();
+    pressX = e.clientX;
+    try { btn.setPointerCapture(e.pointerId); } catch {}
+    showLockTray(true);
     startRecording();
   });
+  btn.addEventListener('pointermove', (e) => {
+    if (!voice.recording || voice.locked || !e.clientX) return;
+    if (e.clientX - pressX > 60) setLockedUI(true); // سحب يمين = قفل
+  });
   const release = (e) => {
-    if (voice.mode !== 'hold') return;
+    if (!voice.recording) return;
+    if (voice.locked) return; // مقفول: يستمر حتى نقرة الإيقاف
     e?.preventDefault?.();
-    finishRecording(false); // +800ms ذيل
+    showLockTray(false);
+    finishRecording(false); // +800ms ذيل ثم تفريغ
   };
   btn.addEventListener('pointerup', release);
-  btn.addEventListener('pointerleave', () => { if (voice.recording && voice.mode === 'hold') finishRecording(false); });
   btn.addEventListener('pointercancel', release);
   btn.addEventListener('contextmenu', (e) => e.preventDefault());
   btn.addEventListener('click', () => {
-    if (voice.mode !== 'tap') return;
-    if (voice.recording) finishRecording(true);
-    else startRecording();
+    // نقرة واحدة أثناء القفل = إيقاف وإرسال
+    if (voice.locked && voice.recording) {
+      showLockTray(false);
+      finishRecording(true);
+    }
   });
 })();
 
