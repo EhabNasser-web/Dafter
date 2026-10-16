@@ -9,7 +9,7 @@ import { withRetry } from '../retry.js';
 
 const MODEL_NAME = process.env.VISION_MODEL || process.env.GEMINI_MODEL || 'gemini-3.7-flash';
 
-const SYSTEM_PROMPT = `أنت قارئ صور في تطبيق "دفتر" – مساعد شخصي للحياة اليومية بالعامية المصرية.
+export const SYSTEM_PROMPT = `أنت قارئ صور في تطبيق "دفتر" – مساعد شخصي للحياة اليومية بالعامية المصرية.
 الصورة المرفقة واحدة من: صفحة يوميات مكتوبة بخط اليد، قائمة مهام، فاتورة أو إيصال، أو ورقة مصاريف.
 
 مهمتك:
