@@ -1687,6 +1687,24 @@
   </div>
 </div>
 
+<!-- ════════════════════════════════════
+     ورقة تعليق الصورة (كابشن واتساب)
+════════════════════════════════════ -->
+<div class="modal-overlay" id="image-caption-modal">
+  <div class="modal-box">
+    <div class="modal-header">
+      <h3>إرسال صورة</h3>
+      <button class="modal-close" id="btn-close-caption-modal">✕</button>
+    </div>
+    <img id="caption-preview" alt="معاينة الصورة" style="display:block; max-width:100%; max-height:220px; object-fit:contain; border-radius:var(--radius-sm); margin:0 auto;">
+    <div>
+      <label class="field-label" for="image-caption-input">تعليق يوجه الوكيل (اختياري)</label>
+      <input class="field-input" id="image-caption-input" placeholder="دي قائمة مهامي ضيفها في مهام اليوم" style="text-align:right;">
+    </div>
+    <button class="btn-primary" id="btn-send-image">إرسال الصورة</button>
+  </div>
+</div>
+
 <div id="toast" role="status" aria-live="polite"></div>
 
 <script>
@@ -2192,34 +2210,61 @@ function downscaleImage(file, maxDim = 480) {
   });
 }
 $('cam-btn').addEventListener('click', () => $('cam-input').click());
+let stagedImage = null; // { blob, url }
 $('cam-input').addEventListener('change', async (e) => {
   const file = e.target.files?.[0];
   e.target.value = '';
   if (!file) return;
-  // Local preview: the server never stores photos, so render from the device
   const small = await downscaleImage(file);
-  const photoURL = URL.createObjectURL(small);
+  if (stagedImage) URL.revokeObjectURL(stagedImage.url);
+  stagedImage = { blob: small, url: URL.createObjectURL(small) };
+  $('caption-preview').src = stagedImage.url;
+  $('image-caption-input').value = '';
+  // Rotating guidance examples so the user learns what to write
+  const CAPTION_EXAMPLES = [
+    'دي قائمة مهامي ضيفها في مهام اليوم',
+    'دي فاتورة سوبر ماركت سجلها في المصاريف',
+    'دي صفحة يومياتي احفظها في اليوميات',
+  ];
+  $('image-caption-input').placeholder =
+    CAPTION_EXAMPLES[Math.floor(Math.random() * CAPTION_EXAMPLES.length)];
+  $('image-caption-modal').classList.add('open');
+  setTimeout(() => $('image-caption-input').focus(), 100);
+});
+$('btn-close-caption-modal').addEventListener('click', () => {
+  $('image-caption-modal').classList.remove('open');
+  if (stagedImage) { URL.revokeObjectURL(stagedImage.url); stagedImage = null; }
+});
+$('btn-send-image').addEventListener('click', async () => {
+  if (!stagedImage) return;
+  const caption = $('image-caption-input').value.trim().slice(0, 500);
+  const photoURL = stagedImage.url;
+  const blob = stagedImage.blob;
+  stagedImage = null;
+  $('image-caption-modal').classList.remove('open');
+  // Local preview: the server never stores photos, so render from the device
   const pendingUser = addMsg('user', '');
   const thumb = document.createElement('img');
   thumb.src = photoURL;
   thumb.alt = 'الصورة المرسلة';
-  const caption = document.createElement('span');
-  caption.className = 'img-caption';
-  caption.textContent = '📷 جاري قراءة الصورة…';
+  const captionEl = document.createElement('span');
+  captionEl.className = 'img-caption';
+  captionEl.textContent = '📷 جاري قراءة الصورة…';
   pendingUser.appendChild(thumb);
-  pendingUser.appendChild(caption);
+  pendingUser.appendChild(captionEl);
   // Free memory after 10 minutes: drop the thumbnail, keep the text
   setTimeout(() => {
     URL.revokeObjectURL(photoURL);
     if (thumb.isConnected) {
       thumb.remove();
-      caption.textContent = '📷 صورة (انتهت المعاينة) ' + caption.textContent.replace(/^📷.*?\]\s*/, '');
+      captionEl.textContent = '📷 صورة (انتهت المعاينة) ' + captionEl.textContent.replace(/^📷.*?\]\s*/, '');
     }
   }, 10 * 60 * 1000);
   const typing = addTyping();
   try {
     const fd = new FormData();
-    fd.append('image', small, 'photo.jpg');
+    fd.append('image', blob, 'photo.jpg');
+    if (caption) fd.append('caption', caption);
     const r = await fetch('/api/images', { method: 'POST', body: fd });
     const d = await r.json();
     typing.remove();
@@ -2229,7 +2274,7 @@ $('cam-input').addEventListener('change', async (e) => {
       addMsg('assistant', d.error || 'حصل خطأ في قراءة الصورة.');
       return;
     }
-    caption.textContent = `📷 [${d.detectedType}] ${d.extracted}`;
+    captionEl.textContent = `📷 [${d.detectedType}]${caption ? ' ' + caption : ''} ${d.extracted}`;
     addMsg('assistant', d.reply || 'حصل خطأ غير متوقع.');
     if (d.toolsUsed?.some(t => t.includes('expense'))) loadExpenses();
     if (d.toolsUsed?.some(t => t.includes('task')))    loadTasks();

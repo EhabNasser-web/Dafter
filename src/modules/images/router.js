@@ -79,10 +79,14 @@ router.post('/', requireAuth, handleUpload, async (req, res) => {
       expenses: 'فاتورة أو ورقة مصاريف',
       unknown: 'محتوى غير مصنف',
     }[seen.type];
+    const caption = String(req.body.caption ?? '').trim().slice(0, 500);
+    const captionBlock = caption
+      ? `تعليق المستخدم على الصورة (اتّبعه في اختيار المكان المناسب): "${caption}"\n`
+      : '';
     const result = await runAgent({
       userId: req.session.userId,
       userPlan,
-      text: `صوّرت ${hint} وهذا النص المستخرج منها:\n${seen.text.trim()}\n(سجّلها في المكان المناسب بعد التأكد مني)`,
+      text: `صوّرت ${hint} وهذا النص المستخرج منها:\n${seen.text.trim()}\n${captionBlock}(سجّلها في المكان المناسب بعد التأكد مني)`,
       transcribed: true,
     });
 
