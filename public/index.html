@@ -760,6 +760,20 @@
       color: var(--color-ink);
       border-bottom-color: var(--color-accent);
     }
+    /* زر ＋ الخارجي – دائرة مميزة بنهاية الفهرس */
+    #category-pills .cat-add {
+      border: 1.5px dashed var(--color-accent);
+      color: var(--color-accent);
+      border-radius: 50%;
+      width: 32px;
+      height: 32px;
+      min-width: 32px;
+      padding: 0;
+      font-size: 1rem;
+      font-weight: 700;
+      line-height: 1;
+      align-self: center;
+    }
 
     /* قائمة بطاقات الإيصالات الورقية (Paper Receipts) */
     .receipt-feed {
@@ -1747,7 +1761,21 @@ async function loadCategories() {
     b.textContent = `${c.emoji} ${c.name}`;
     pills.appendChild(b);
   }
-  pills.querySelectorAll('.cat-pill').forEach(btn => {
+  // External "+" – opens the expense form straight into new-category mode
+  const addBtn = document.createElement('button');
+  addBtn.className = 'cat-pill cat-add';
+  addBtn.textContent = '＋';
+  addBtn.title = 'إضافة تصنيف جديد';
+  addBtn.setAttribute('aria-label', 'إضافة تصنيف جديد');
+  addBtn.addEventListener('click', () => {
+    $('type-opt-expense')?.click();
+    $('manual-category').value = '__new__';
+    $('manual-category').dispatchEvent(new Event('change'));
+    $('add-expense-modal').classList.add('open');
+    setTimeout(() => $('manual-new-category').focus(), 100);
+  });
+  pills.appendChild(addBtn);
+  pills.querySelectorAll('.cat-pill:not(.cat-add)').forEach(btn => {
     btn.addEventListener('click', () => {
       pills.querySelectorAll('.cat-pill').forEach(b => b.classList.remove('active'));
       btn.classList.add('active');
@@ -2522,6 +2550,7 @@ $('btn-submit-expense').addEventListener('click', async () => {
       $('manual-new-category').value = '';
       $('new-category-wrap').style.display = 'none';
       $('add-expense-modal').classList.remove('open');
+      await loadCategories();
       loadExpenses();
     } else {
       toast('خطأ في الحفظ');

@@ -7,12 +7,28 @@ import { Router } from 'express';
 import { requireAuth } from '../../core/auth.js';
 import { tools } from './tools.js';
 import { EXPENSE_CATEGORIES } from '../../../config/categories.js';
+import { db } from '../../db/index.js';
+import { expenses } from '../../db/schema.js';
+import { eq, sql } from 'drizzle-orm';
 
 export const router = Router();
 
-// GET /api/expenses/categories – canonical list for pills + manual form
-router.get('/categories', requireAuth, (_req, res) => {
-  res.json({ ok: true, data: EXPENSE_CATEGORIES });
+// GET /api/expenses/categories – canonical list + the user's own used ones
+router.get('/categories', requireAuth, async (req, res) => {
+  try {
+    const known = new Set(EXPENSE_CATEGORIES.map((c) => c.name));
+    const rows = await db.selectDistinct({ category: expenses.category })
+      .from(expenses)
+      .where(eq(expenses.user_id, req.session.userId));
+    const custom = rows
+      .map((r) => r.category)
+      .filter((c) => c && !known.has(c))
+      .map((name) => ({ name, emoji: '🏷️' }));
+    res.json({ ok: true, data: [...EXPENSE_CATEGORIES, ...custom] });
+  } catch (err) {
+    console.error('[expenses/categories]', err.message);
+    res.status(500).json({ error: 'خطأ في تحميل التصنيفات.' });
+  }
 });
 
 // GET /api/expenses – list
