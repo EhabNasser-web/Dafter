@@ -13,7 +13,7 @@
 import { Router } from 'express';
 import multer from 'multer';
 import { requireAuth } from '../../core/auth.js';
-import { getSttProvider } from '../../providers/stt/index.js';
+import { getSttProvider, getSttFallbackProvider } from '../../providers/stt/index.js';
 import { getReviewerProvider } from '../../providers/reviewer/index.js';
 import { buildSttPrompt } from '../../providers/stt/prompt.js';
 import { getPlan } from '../../../config/plans.js';
@@ -81,15 +81,24 @@ router.post('/transcribe', requireAuth, handleUpload, async (req, res) => {
       return res.status(429).json({ error: voiceQuota.error });
     }
 
-    // 1. Transcribe with Whisper + personalized short prompt
-    const stt = getSttProvider();
+    // 1. Transcribe: primary first, automatic fallback on overload/timeout
     const mime = req.file.mimetype || 'audio/webm';
     const filename = `voice.${EXT_BY_MIME[mime] ?? 'webm'}`;
     const personalTerms = await topPersonalTerms(userId).catch(() => []);
-    const { text: rawText, durationSeconds } = await stt(
-      req.file.buffer, mime, filename,
-      { prompt: buildSttPrompt({ personalTerms }) }
-    );
+    const prompt = buildSttPrompt({ personalTerms });
+    let rawText, durationSeconds;
+    try {
+      ({ text: rawText, durationSeconds } = await getSttProvider()(
+        req.file.buffer, mime, filename, { prompt }
+      ));
+    } catch (primaryErr) {
+      const fallback = getSttFallbackProvider();
+      if (!fallback) throw primaryErr;
+      console.warn(`[voice] primary STT failed (${primaryErr.message}) – trying fallback`);
+      ({ text: rawText, durationSeconds } = await fallback(
+        req.file.buffer, mime, filename, { prompt }
+      ));
+    }
 
     if (!rawText || rawText.trim().length === 0) {
       return res.status(422).json({ error: 'لم أسمع شيئاً واضحاً. سجّل مجدداً بصوت أعلى.' });

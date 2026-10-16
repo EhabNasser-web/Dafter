@@ -29,3 +29,20 @@ export function getSttProvider() {
   }
   return provider;
 }
+
+/**
+ * Fallback transcriber used once when the primary fails (overload/timeout).
+ * Set STT_FALLBACK_PROVIDER=none to disable. Defaults to the *other* provider.
+ * @returns {Function|null}
+ */
+export function getSttFallbackProvider() {
+  const primary = process.env.STT_PROVIDER ?? 'gemini';
+  const name = process.env.STT_FALLBACK_PROVIDER
+    ?? (primary === 'gemini' ? 'groq' : 'gemini');
+  if (name === 'none' || name === primary) return null;
+  const provider = PROVIDERS[name];
+  if (!provider) {
+    throw new Error(`Unknown STT_FALLBACK_PROVIDER "${name}". Available: ${Object.keys(PROVIDERS).join(', ')}`);
+  }
+  return provider;
+}
