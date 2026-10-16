@@ -3044,6 +3044,7 @@ function showVoiceDraft({ rawText, text, blob, rawBlob = null }) {
 /* ربط زر الميك: ضغط مستمر = تسجيل، إفلات = إرسال، سحب يمين = قفل */
 function setLockedUI(locked) {
   voice.locked = locked;
+  if (locked) voice.lockTime = Date.now();
   $('lock-tray')?.classList.toggle('locked', locked);
   const icon = $('lock-icon');
   if (icon) icon.textContent = locked ? '🔒' : '🔓';
@@ -3078,6 +3079,8 @@ function showLockTray(on) {
   btn.addEventListener('pointercancel', release);
   btn.addEventListener('contextmenu', (e) => e.preventDefault());
   btn.addEventListener('click', () => {
+    // تجاهل نقرة الإفلات التي تلي القفل مباشرة (حدث click يتبع pointerup)
+    if (Date.now() - (voice.lockTime || 0) < 600) return;
     // نقرة واحدة أثناء القفل = إيقاف وإرسال
     if (voice.locked && voice.recording) {
       showLockTray(false);
