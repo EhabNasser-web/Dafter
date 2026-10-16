@@ -1,7 +1,12 @@
 /**
  * src/modules/voice/router.js
- * Voice messages: POST /api/voice (multipart, field "audio").
- * Pipeline: Groq Whisper STT → Gemini reviewer (per plan) → agent.
+ * Voice input WITHOUT automatic agent execution.
+ *   POST /api/voice/transcribe (multipart, field "audio")
+ *     → quotas → Whisper STT (personalized prompt) → reviewer (vocab + audio)
+ *     → { rawText, text, durationSeconds }
+ * The chat draft UI sends the final (possibly edited) text to /api/chat,
+ * which stores corrections and may learn vocabulary – nothing is recorded
+ * until the user presses Send.
  * Auto-mounted by moduleLoader at /api/voice.
  */
 
@@ -10,10 +15,11 @@ import multer from 'multer';
 import { requireAuth } from '../../core/auth.js';
 import { getSttProvider } from '../../providers/stt/index.js';
 import { getReviewerProvider } from '../../providers/reviewer/index.js';
-import { runAgent } from '../../core/agent.js';
+import { buildSttPrompt } from '../../providers/stt/prompt.js';
 import { getPlan } from '../../../config/plans.js';
 import { checkQuota, logUsage } from '../../core/usage.js';
-import { llmCostEstimate, sttCostEstimate } from '../../../config/costs.js';
+import { sttCostEstimate } from '../../../config/costs.js';
+import { topPersonalTerms, getVocabularyText } from '../../core/vocabulary.js';
 
 export const router = Router();
 
@@ -53,80 +59,70 @@ const EXT_BY_MIME = {
   'audio/x-wav': 'wav',
 };
 
-router.post('/', requireAuth, handleUpload, async (req, res) => {
+const isMostlyArabic = (text) => {
+  const arabicChars = (text.match(/[\u0600-\u06FF]/g) || []).length;
+  const letters = (text.match(/\p{L}/gu) || []).length;
+  return letters === 0 || arabicChars / letters >= 0.3;
+};
+
+router.post('/transcribe', requireAuth, handleUpload, async (req, res) => {
   try {
     if (!req.file?.buffer?.length) {
       return res.status(400).json({ error: 'لم يصل أي ملف صوتي.' });
     }
 
+    const userId = req.session.userId;
     const userPlan = req.session.userPlan ?? 'free';
     const plan = getPlan(userPlan);
 
-    // Quota gates before spending on STT
-    const msgQuota = await checkQuota(req.session.userId, userPlan, 'message');
-    if (!msgQuota.allowed) {
-      return res.status(429).json({ error: msgQuota.error });
-    }
-    const voiceQuota = await checkQuota(req.session.userId, userPlan, 'voice');
+    // Quota gate before spending on STT (message quota is spent at Send time)
+    const voiceQuota = await checkQuota(userId, userPlan, 'voice');
     if (!voiceQuota.allowed) {
       return res.status(429).json({ error: voiceQuota.error });
     }
 
-    // 1. Transcribe with Whisper
+    // 1. Transcribe with Whisper + personalized short prompt
     const stt = getSttProvider();
     const mime = req.file.mimetype || 'audio/webm';
     const filename = `voice.${EXT_BY_MIME[mime] ?? 'webm'}`;
-    const { text: rawText, durationSeconds } = await stt(req.file.buffer, mime, filename);
+    const personalTerms = await topPersonalTerms(userId).catch(() => []);
+    const { text: rawText, durationSeconds } = await stt(
+      req.file.buffer, mime, filename,
+      { prompt: buildSttPrompt({ personalTerms }) }
+    );
 
     if (!rawText || rawText.trim().length === 0) {
       return res.status(422).json({ error: 'لم أسمع شيئاً واضحاً. سجّل مجدداً بصوت أعلى.' });
     }
 
-    // Guard: Whisper sometimes returns Latin transliteration for unclear audio
-    // (e.g. "arن μsr ofta alls"). Feeding that to the agent produces nonsense
-    // records – ask the user to re-record instead.
-    const arabicChars = (rawText.match(/[\u0600-\u06FF]/g) || []).length;
-    const letters = (rawText.match(/\p{L}/gu) || []).length;
-    if (letters > 0 && arabicChars / letters < 0.3) {
-      console.log(`[voice] rejecting non-Arabic transcript: ${rawText.slice(0, 120)}`);
+    // Guard: Whisper sometimes returns Latin transliteration for unclear audio.
+    if (!isMostlyArabic(rawText)) {
+      console.log('[voice] rejecting non-Arabic transcript');
       return res.status(422).json({ error: 'الصوت كان غير واضح والتفريغ طلع ملخبط. سجّل تاني في مكان هادي وبصوت واضح.' });
     }
 
-    // 2. Review/correct the transcript (skipped on free plan to save cost)
+    // 2. Review/correct (skipped on free plan to save cost)
     let text = rawText;
-    console.log(`[voice] raw transcript (${durationSeconds ?? 0}s): ${rawText.slice(0, 200)}`);
-    try {
-      const reviewer = getReviewerProvider({ bypass: !plan.use_reviewer });
-      text = await reviewer(rawText);
-      if (text !== rawText) {
-        console.log(`[voice] reviewed transcript: ${text.slice(0, 200)}`);
+    if (plan.use_reviewer) {
+      try {
+        const reviewer = getReviewerProvider();
+        const vocabularyText = await getVocabularyText(userId).catch(() => '');
+        text = await reviewer(rawText, {
+          vocabularyText,
+          audio: { buffer: req.file.buffer, mimeType: mime },
+        });
+      } catch (revErr) {
+        console.error('[voice] Reviewer failed, continuing with raw transcript:', revErr.message);
       }
-    } catch (revErr) {
-      console.error('[voice] Reviewer failed, continuing with raw transcript:', revErr.message);
     }
 
-    // 3. Run the agent on the transcript
-    const result = await runAgent({
-      userId: req.session.userId,
-      userPlan,
-      text: text.trim(),
-      voiceSeconds: durationSeconds ?? 0,
-      transcribed: true, // numbers may be misheard – agent must confirm amounts first
-    });
+    // Fire-and-forget accounting (message counted at Send)
+    logUsage(userId, 'voice', 1, 0);
+    logUsage(userId, 'voice_seconds', durationSeconds ?? 0, sttCostEstimate(durationSeconds ?? 0));
 
-    // Fire-and-forget accounting
-    logUsage(req.session.userId, 'voice', 1, 0);
-    logUsage(req.session.userId, 'voice_seconds', durationSeconds ?? 0, sttCostEstimate(durationSeconds ?? 0));
-    logUsage(req.session.userId, 'message', 1, 0);
-    if (result.usage) {
-      const { model, promptTokens, completionTokens } = result.usage;
-      logUsage(req.session.userId, 'tokens', promptTokens + completionTokens,
-        llmCostEstimate(model, promptTokens, completionTokens));
-    }
-
-    res.json({ reply: result.reply, toolsUsed: result.toolsUsed, transcript: text.trim() });
+    res.json({ rawText: rawText.trim(), text: text.trim(), durationSeconds: durationSeconds ?? 0 });
   } catch (err) {
-    console.error('[voice] Agent error:', err.message);
+    console.error('[voice] Transcribe error:', err.message);
     res.status(500).json({ error: 'معلش، فيه مشكلة. جرب تاني.' });
   }
 });

@@ -12,50 +12,50 @@
 
 import { GoogleGenerativeAI } from '@google/generative-ai';
 import { withRetry } from '../retry.js';
+import { BASE_RULES, buildReviewerSystem } from './message.js';
 
 const MODEL_NAME = process.env.GEMINI_MODEL || 'gemini-3.8-flash'; // fast, free tier, excellent Arabic
 
-export const SYSTEM_PROMPT = `أنت مصحح نصوص في تطبيق "دفتر" – مساعد شخصي للحياة اليومية يتحدث العامية المصرية.
-النص الذي يصلك مفرّغ من تسجيل صوتي لشخص يتكلم عامية مصرية، وقد تكون عنده مشاكل في مخارج بعض الحروف (مثل: ج/ق، س/ص، ز/ذ)، فالكلمات قد تظهر محرّفة صوتياً.
-
-سياق التطبيق (المواضيع المتوقعة):
-- مصاريف ودخل: مبالغ بالجنيه، تصنيفات (أكل، مواصلات، فواتير، تسوق، صحة، تعليم، إيجار، راتب).
-- مهام وتذكيرات: أفعال مثل (فكرني، لازم، بكرة، النهارده).
-- يوميات ومشاعر: وصف اليوم والمزاج (مبسوط، قلقان، متحمس).
-استخدم هذا السياق لتوقّع الكلمة الأرجح عند التشوه.
-
-قواعد صارمة:
-1. الحد الأدنى من التعديل: لا تغيّر أي كلمة واضحة ومفهومة، حتى لو إملاؤها عامي.
-2. الأفعال مقدسة مثل الأرقام: "جبت" (اشتريت) لا تتحول أبداً إلى "قبضت" (استلمت) – الفرق بينهما يعكس المعنى المالي. وكذلك "صرفت" لا تتحول إلى "صرفت/سرفت" بمعنى آخر.
-3. الأرقام والعملات: حافظ عليها وركّبها في جملة منطقية (مثل: خمس، خمسين، جنيه، جنيهات).
-4. أمثلة لأخطاء سمع شائعة: "سروفتي" → "صرفت"، "خمس بني" → "خمسين جنيه"، "النهارده/نودده" → "النهارده"، "شيبسي/شيرسي/شبسي" → "شيبسي"، "بيون/بيوم" → "بيهم"، "أشنيني/أشريم" → "عشرين".
-5. الاستنتاج السياقي: لو وجدت كلمة لا تناسب السياق (مثال: التفريغ أخرج "بيون" في جملة شراء، والمناسب للسياق "بيهم")، استبدلها بالكلمة المناسبة للسياق دون تردد – بشرط ألا تكون رقماً أو اسماً. السياق (مصروف/مهمة/يومية) هو الحكم، وليس التشابه الصوتي وحده.
-6. لا تترجم للفصحى أبداً – الناتج عامية مصرية فقط.
-7. ردّك يكون النص المصحح فقط – بدون شرح أو تعليق أو تشكيل زائد.`;
+export const SYSTEM_PROMPT = BASE_RULES;
 
 /**
  * Review and correct an Arabic transcript.
  *
  * @param {string} rawTranscript – text from Whisper
+ * @param {{ vocabularyText?: string, audio?: { buffer: Buffer, mimeType: string } }} [opts]
+ *   – personal vocabulary text; original audio (used by Gemini when available)
  * @returns {Promise<string>}    – corrected text
  */
-export async function reviewWithGemini(rawTranscript) {
+export async function reviewWithGemini(rawTranscript, opts = {}) {
   if (!process.env.GOOGLE_API_KEY) {
     throw new Error('GOOGLE_API_KEY is not set in environment.');
   }
 
   if (!rawTranscript?.trim()) return '';
 
+  const systemInstruction = buildReviewerSystem({ vocabText: opts.vocabularyText });
+
   return withRetry(
     async () => {
       const genAI = new GoogleGenerativeAI(process.env.GOOGLE_API_KEY);
       const model = genAI.getGenerativeModel({
         model: MODEL_NAME,
-        systemInstruction: SYSTEM_PROMPT,
+        systemInstruction,
       });
 
+      const parts = [{ text: rawTranscript }];
+      if (opts.audio?.buffer?.length) {
+        parts.push({
+          inlineData: {
+            data: opts.audio.buffer.toString('base64'),
+            mimeType: opts.audio.mimeType || 'audio/webm',
+          },
+        });
+        parts.unshift({ text: 'التفريغ المبدئي أعلاه مأخوذ من هذا التسجيل. استمع إليه وراجع التصحيح.' });
+      }
+
       const result = await model.generateContent({
-        contents: [{ role: 'user', parts: [{ text: rawTranscript }] }],
+        contents: [{ role: 'user', parts }],
         generationConfig: {
           temperature: 0.1,  // low temp = conservative corrections
           maxOutputTokens: 1024,

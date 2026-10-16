@@ -608,6 +608,149 @@
       70%  { box-shadow: 0 0 0 18px rgba(192,57,43,0); }
       100% { box-shadow: 0 0 0 0   rgba(192,57,43,0); }
     }
+    /* مؤشر الميك المفتوح + عدّاد التسجيل */
+    .mic-wrap { position: relative; flex-shrink: 0; }
+    .mic-on-dot {
+      position: absolute;
+      top: 2px;
+      left: 2px;
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+      background: var(--color-success);
+      border: 2px solid var(--color-surface);
+      display: none;
+      z-index: 2;
+    }
+    .mic-on-dot.on { display: block; }
+    .rec-timer {
+      position: absolute;
+      bottom: -2px;
+      right: -6px;
+      background: var(--color-ink);
+      color: var(--color-bg);
+      font-size: 0.62rem;
+      font-weight: 700;
+      padding: 1px 7px;
+      border-radius: 10px;
+      display: none;
+      z-index: 2;
+      font-variant-numeric: tabular-nums;
+    }
+    .rec-timer.on { display: block; }
+    .rec-timer.warn { background: #c0392b; color: #fff; }
+    .mode-btn {
+      background: none;
+      border: none;
+      color: var(--color-ink-muted);
+      font-size: 0.68rem;
+      cursor: pointer;
+      padding: 2px 4px;
+    }
+    .mode-btn.active { color: var(--color-accent); font-weight: 700; }
+    /* حالة المعالجة مع زر الإلغاء */
+    .processing-box {
+      align-self: flex-start;
+      background: var(--color-surface);
+      border: 1px solid var(--color-border);
+      border-radius: var(--radius-md);
+      padding: 12px 16px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      font-size: 0.88rem;
+      animation: msgIn 0.18s ease;
+    }
+    .processing-box .spinner-mini {
+      width: 16px;
+      height: 16px;
+      border: 2px solid var(--color-border-strong);
+      border-top-color: var(--color-accent);
+      border-radius: 50%;
+      animation: spin 0.65s linear infinite;
+    }
+    .processing-box .cancel-link {
+      background: none;
+      border: none;
+      color: var(--color-accent);
+      font-family: var(--font-body);
+      font-size: 0.8rem;
+      cursor: pointer;
+      font-weight: 700;
+    }
+    /* فقاعة المسودة الصوتية */
+    .draft-bubble {
+      align-self: flex-end;
+      background: var(--color-surface);
+      border: 1.5px dashed var(--color-border-strong);
+      border-radius: var(--radius-md);
+      padding: 12px 14px;
+      max-width: 88%;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      animation: msgIn 0.18s ease;
+    }
+    .draft-bubble textarea {
+      width: 100%;
+      min-height: 64px;
+      border: 1px solid var(--color-border);
+      border-radius: var(--radius-sm);
+      background: var(--color-bg);
+      color: var(--color-ink);
+      font-family: var(--font-body);
+      font-size: 0.92rem;
+      padding: 8px 10px;
+      resize: vertical;
+    }
+    .draft-text { font-size: 0.93rem; line-height: 1.65; word-break: break-word; }
+    .draft-actions { display: flex; gap: 6px; flex-wrap: wrap; }
+    .draft-actions button {
+      border: 1px solid var(--color-border);
+      background: var(--color-bg);
+      color: var(--color-ink);
+      border-radius: 16px;
+      padding: 5px 12px;
+      font-family: var(--font-body);
+      font-size: 0.78rem;
+      font-weight: 700;
+      cursor: pointer;
+    }
+    .draft-actions button.primary {
+      background: var(--color-accent);
+      border-color: var(--color-accent);
+      color: #fff;
+    }
+    .draft-actions button.danger { color: #c0392b; }
+    /* عناصر المفردات في الإعدادات */
+    .vocab-group-title { font-size: 0.82rem; font-weight: 800; margin: 10px 0 6px; color: var(--color-ink); }
+    .vocab-item {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      background: var(--color-bg);
+      border: 1px solid var(--color-border);
+      border-radius: var(--radius-sm);
+      padding: 7px 10px;
+      margin-bottom: 6px;
+      font-size: 0.84rem;
+    }
+    .vocab-item .v-term { font-weight: 700; }
+    .vocab-item .v-note { color: var(--color-ink-muted); font-size: 0.74rem; flex: 1; }
+    .vocab-item .v-src {
+      font-size: 0.66rem;
+      background: var(--color-surface-2);
+      border-radius: 8px;
+      padding: 1px 7px;
+      color: var(--color-ink-muted);
+    }
+    .vocab-item button {
+      background: none;
+      border: none;
+      cursor: pointer;
+      font-size: 0.8rem;
+      padding: 2px 4px;
+    }
 
     /* ══════════════════════════════════════════════════════════
        شاشة المصروفات المعاد تصميمها (Notebook Ledger)
@@ -1417,6 +1560,45 @@
         </div>
       </div>
 
+      <!-- تحسين أداء البرنامج: مفردات التفريغ الصوتي -->
+      <div>
+        <div class="drawer-section-title">
+          <span>⚙️</span>
+          <span>تحسين أداء البرنامج</span>
+        </div>
+        <div class="profile-card" style="gap:10px;">
+          <div style="font-size:0.86rem; font-weight:800;">🎙️ تحسين تفريغ الصوت</div>
+          <p style="font-size:0.78rem; color:var(--color-ink-muted); margin:0; line-height:1.7;">
+            علّم دفتر الأسماء والأماكن والأفعال اللي بتقولها كتير (زي أسماء عيلتك أو شغلك)،
+            وهو هيسمعها صح من أول مرة في التسجيلات الجاية.
+          </p>
+          <div class="p-field">
+            <label class="p-label" for="vocab-term">الكلمة أو الاسم</label>
+            <input class="p-input" id="vocab-term" placeholder="مثلاً: أحمد، المعادي، صليت">
+          </div>
+          <div style="display:flex; gap:8px;">
+            <div class="p-field" style="flex:1;">
+              <label class="p-label" for="vocab-cat">التصنيف</label>
+              <select class="p-input" id="vocab-cat">
+                <option value="people">أشخاص</option>
+                <option value="places">أماكن</option>
+                <option value="actions">أفعال وأنشطة</option>
+              </select>
+            </div>
+            <div class="p-field" style="flex:2;">
+              <label class="p-label" for="vocab-note">بيتتقال غلط إزاي؟ (اختياري)</label>
+              <input class="p-input" id="vocab-note" placeholder="مثلاً: بيسمعها أحمر">
+            </div>
+          </div>
+          <button class="btn-save-profile" id="btn-add-vocab">إضافة للمفردات</button>
+          <div class="p-field">
+            <label class="p-label" for="vocab-search">دوّر في مفرداتك</label>
+            <input class="p-input" id="vocab-search" placeholder="اكتب للبحث…">
+          </div>
+          <div id="vocab-list"></div>
+        </div>
+      </div>
+
       <!-- منطقة الخطر: حذف الحساب (Phase 2.4) -->
       <div>
         <div class="drawer-section-title">
@@ -1498,7 +1680,11 @@
           </svg>
         </button>
         <input type="file" id="cam-input" accept="image/*" style="display:none">
-        <button class="mic-btn" id="mic-btn" aria-label="تسجيل صوتي">
+        <button class="mode-btn" id="mic-mode-btn" title="التبديل بين الضغط المستمر والنقرة">مستمر</button>
+        <div class="mic-wrap">
+          <span class="mic-on-dot" id="mic-on-dot" title="الميكروفون مفتوح"></span>
+          <span class="rec-timer" id="rec-timer">0:00</span>
+          <button class="mic-btn" id="mic-btn" aria-label="تسجيل صوتي">
           <svg id="mic-icon" viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
             <path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/>
             <path d="M19 10v2a7 7 0 0 1-14 0v-2"/>
@@ -1509,6 +1695,7 @@
             <rect x="4" y="4" width="16" height="16" rx="2"/>
           </svg>
         </button>
+        </div>
       </div>
     </div>
 
@@ -1912,6 +2099,7 @@ async function showApp() {
   await refreshSession();
   await setupSubscribeButton();
   await loadCategories();
+  loadVocabList();
   checkPushSubscription();
   loadScreen(currentScreen);
 }
@@ -2048,6 +2236,105 @@ async function loadAdminUsers() {
 }
 
 $('btn-reload-users')?.addEventListener('click', loadAdminUsers);
+
+/* ─────────────────────────────────────────────────────────────
+   مفردات التفريغ الصوتي (تحسين أداء البرنامج)
+───────────────────────────────────────────────────────────── */
+const VOCAB_LABELS = { people: 'أشخاص', places: 'أماكن', actions: 'أفعال وأنشطة' };
+
+async function loadVocabList() {
+  const box = $('vocab-list');
+  const q = $('vocab-search')?.value.trim() || '';
+  box.innerHTML = '<div class="spinner"></div>';
+  try {
+    const r = await fetch('/api/vocabulary' + (q ? `?search=${encodeURIComponent(q)}` : '')).then(r => r.json());
+    const rows = r.data || [];
+    if (!rows.length) {
+      box.innerHTML = '<p style="font-size:0.8rem; color:var(--color-ink-muted);">مفيش مفردات لسه. ضيف أول كلمة فوق 👆</p>';
+      return;
+    }
+    box.innerHTML = '';
+    for (const cat of ['people', 'places', 'actions']) {
+      const group = rows.filter(x => x.category === cat);
+      if (!group.length) continue;
+      const title = document.createElement('div');
+      title.className = 'vocab-group-title';
+      title.textContent = `${VOCAB_LABELS[cat]} (${group.length})`;
+      box.appendChild(title);
+      for (const v of group) {
+        const item = document.createElement('div');
+        item.className = 'vocab-item';
+        const term = document.createElement('span');
+        term.className = 'v-term';
+        term.textContent = v.term;
+        const note = document.createElement('span');
+        note.className = 'v-note';
+        note.textContent = v.note || '';
+        const src = document.createElement('span');
+        src.className = 'v-src';
+        src.textContent = v.source === 'learned' ? 'اتعلمها' : 'يدوي';
+        const editBtn = document.createElement('button');
+        editBtn.textContent = '✏️';
+        editBtn.title = 'تعديل';
+        editBtn.onclick = async () => {
+          const newTerm = prompt('الكلمة:', v.term);
+          if (newTerm === null) return;
+          const newNote = prompt('بيتتقال غلط إزاي؟ (اختياري)', v.note || '');
+          if (newNote === null) return;
+          const rr = await fetch(`/api/vocabulary/${v.id}`, {
+            method: 'PATCH',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ term: newTerm, note: newNote }),
+          }).then(r => r.json()).catch(() => ({}));
+          if (!rr.ok) toast('⚠️ ' + (rr.error || 'تعذّر التعديل.'));
+          loadVocabList();
+        };
+        const delBtn = document.createElement('button');
+        delBtn.textContent = '🗑️';
+        delBtn.title = 'حذف';
+        delBtn.onclick = async () => {
+          if (!confirm(`امسح "${v.term}" من مفرداتك؟`)) return;
+          await fetch(`/api/vocabulary/${v.id}`, { method: 'DELETE' }).catch(() => {});
+          loadVocabList();
+        };
+        item.append(term, note, src, editBtn, delBtn);
+        box.appendChild(item);
+      }
+    }
+  } catch {
+    box.innerHTML = '<p>خطأ في التحميل.</p>';
+  }
+}
+
+$('btn-add-vocab')?.addEventListener('click', async () => {
+  const term = $('vocab-term').value.trim();
+  const category = $('vocab-cat').value;
+  const note = $('vocab-note').value.trim();
+  if (!term) { toast('اكتب الكلمة الأول.'); return; }
+  try {
+    const r = await fetch('/api/vocabulary', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ category, term, note }),
+    }).then(r => r.json());
+    if (!r.ok) {
+      toast('⚠️ ' + (r.error || 'تعذّرت الإضافة.'));
+      return;
+    }
+    $('vocab-term').value = '';
+    $('vocab-note').value = '';
+    toast('✅ اتضافت. هيسمعها صح من دلوقتي.');
+    loadVocabList();
+  } catch {
+    toast('خطأ في الاتصال.');
+  }
+});
+
+let vocabSearchTimer = null;
+$('vocab-search')?.addEventListener('input', () => {
+  clearTimeout(vocabSearchTimer);
+  vocabSearchTimer = setTimeout(loadVocabList, 300);
+});
 
 $('login-btn').addEventListener('click', async () => {
   const email = $('login-email').value.trim();
@@ -2187,6 +2474,7 @@ function switchScreen(name) {
   document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
   $('screen-' + name)?.classList.add('active');
   document.querySelector(`.nav-btn[data-screen="${name}"]`)?.classList.add('active');
+  if (typeof voiceScreen === 'function') voiceScreen(name === 'chat');
   loadScreen(name);
 }
 
@@ -2350,72 +2638,424 @@ $('btn-send-image').addEventListener('click', async () => {
   }
 });
 
-/* تسجيل الصوت بالميكروفون */
-let recording = false, mr = null, chunks = [];
-$('mic-btn').addEventListener('click', async () => {
-  if (!recording) {
-    try {
-      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-      let mrOptions = {};
-      try {
-        // Higher bitrate = clearer speech for Whisper (falls back silently if unsupported)
-        mrOptions = { audioBitsPerSecond: 128000 };
-        mr = new MediaRecorder(stream, mrOptions);
-      } catch {
-        mr = new MediaRecorder(stream);
-      }
-      chunks = [];
-      mr.ondataavailable = e => chunks.push(e.data);
-      mr.onstop = async () => {
-        stream.getTracks().forEach(t => t.stop());
-        const blob = new Blob(chunks, { type: mr.mimeType || 'audio/webm' });
-        chunks = [];
-        if (!blob.size) {
-          toast('التسجيل فاضي، جرّب تاني.');
-          return;
-        }
-        const typing = addTyping();
-        // Optimistic bubble so the user sees their message instantly;
-        // replaced with the real transcript when the server responds.
-        const pendingUser = addMsg('user', '🎙️ جاري تحويل الصوت لنص…');
-        try {
-          const fd = new FormData();
-          fd.append('audio', blob, 'voice.webm');
-          const r = await fetch('/api/voice', { method: 'POST', body: fd });
-          const d = await r.json();
-          typing.remove();
-          if (!r.ok || d.error) {
-            pendingUser.remove();
-            addMsg('assistant', d.error || 'حصل خطأ في معالجة الصوت.');
-            return;
-          }
-          pendingUser.textContent = '🎙️ ' + (d.transcript || 'رسالة صوتية');
-          addMsg('assistant', d.reply || 'حصل خطأ غير متوقع.');
-          if (d.toolsUsed?.some(t => t.includes('expense'))) loadExpenses();
-          if (d.toolsUsed?.some(t => t.includes('task')))    loadTasks();
-          if (d.toolsUsed?.some(t => t.includes('diary')))   loadDiary();
-        } catch {
-          typing.remove();
-          addMsg('assistant', 'تأكد من الاتصال وحاول مجدداً.');
-        }
-      };
-      mr.start();
-      recording = true;
-      $('mic-btn').classList.add('recording');
-      $('mic-icon').style.display  = 'none';
-      $('stop-icon').style.display = '';
-      toast('جاري التسجيل… اضغط مرة أخرى للإيقاف');
-    } catch {
-      toast('يُرجى السماح باستخدام الميكروفون');
-    }
-  } else {
-    mr?.stop();
-    recording = false;
-    $('mic-btn').classList.remove('recording');
-    $('mic-icon').style.display  = '';
-    $('stop-icon').style.display = 'none';
+/* ══════════════════════════════════════════════════════════
+   الصوت: ميك دافئ + ضغط مستمر/نقرة + مسودة قبل الإرسال
+   - لا شيء يُرسل للوكيل ولا يُحفظ قبل ضغط «إرسال»
+   - الصوت في ذاكرة المتصفح فقط، ولا يُخزن على السيرفر أبداً
+   ══════════════════════════════════════════════════════════ */
+const voice = {
+  stream: null, ctx: null, analyser: null, dest: null,
+  gain: null, comp: null, hp: null,
+  mode: localStorage.getItem('daftar_voice_mode') || 'hold',
+  recording: false, mr: null, mrRaw: null, chunks: [], chunksRaw: [],
+  noise: 'quiet', recStart: 0, timerId: null, autoStopId: null,
+  currentAbort: null,
+};
+const VOICE_MAX_SEC = 90, VOICE_WARN_SEC = 80, VOICE_TRAIL_MS = 800;
+const voiceDebug = () => localStorage.getItem('daftar_voice_debug') === '1';
+window.voiceDebug = (on) => {
+  localStorage.setItem('daftar_voice_debug', on ? '1' : '0');
+  toast(on ? 'وضع فحص الصوت مفعّل (تسجيل خام + معالج)' : 'وضع فحص الصوت متوقف');
+};
+
+function fmtClock(s) {
+  s = Math.max(0, Math.floor(s));
+  return `${Math.floor(s / 60)}:${String(s % 60).padStart(2, '0')}`;
+}
+
+/** تسخين الميك: فتح الستريم + سلسلة Web Audio + قياس ضوضاء ثانية */
+async function ensureVoiceStream() {
+  if (voice.stream?.active) return true;
+  try {
+    voice.stream = await navigator.mediaDevices.getUserMedia({
+      audio: {
+        channelCount: 1,
+        sampleRate: { ideal: 16000 },
+        echoCancellation: true,
+        noiseSuppression: true,
+        autoGainControl: true,
+      },
+    });
+  } catch {
+    toast('يُرجى السماح باستخدام الميكروفون');
+    return false;
   }
+  try {
+    voice.ctx = voice.ctx || new (window.AudioContext || window.webkitAudioContext)();
+    await voice.ctx.resume().catch(() => {});
+    voice.src = voice.ctx.createMediaStreamSource(voice.stream);
+    voice.gain = voice.ctx.createGain();
+    voice.gain.gain.value = 1.6; // تعزيز للصوت الهادئ
+    voice.comp = voice.ctx.createDynamicsCompressor(); // مانع تشويش (limiter)
+    voice.comp.threshold.value = -18;
+    voice.comp.ratio.value = 4;
+    voice.hp = voice.ctx.createBiquadFilter();
+    voice.hp.type = 'highpass';
+    voice.hp.frequency.value = 90;
+    voice.analyser = voice.ctx.createAnalyser();
+    voice.analyser.fftSize = 512;
+    voice.dest = voice.ctx.createMediaStreamDestination();
+    voice.src.connect(voice.gain);
+    voice.gain.connect(voice.comp);
+    voice.comp.connect(voice.analyser);
+    voice.analyser.connect(voice.dest);
+    $('mic-on-dot')?.classList.add('on');
+  } catch {
+    // بدون Web Audio: نسجل الخام مباشرة
+    voice.dest = null;
+  }
+  measureAmbient();
+  return true;
+}
+
+function analyserRMS() {
+  if (!voice.analyser) return 0;
+  const buf = new Uint8Array(voice.analyser.fftSize);
+  voice.analyser.getByteTimeDomainData(buf);
+  let sum = 0;
+  for (let i = 0; i < buf.length; i++) {
+    const v = (buf[i] - 128) / 128;
+    sum += v * v;
+  }
+  return Math.sqrt(sum / buf.length);
+}
+
+/** قياس ضوضاء المكان ~ثانية قبل التسجيل، وتكييف السلسلة والنصيحة */
+function measureAmbient() {
+  setTimeout(() => {
+    if (voice.recording || !voice.analyser) return;
+    const rms = analyserRMS();
+    if (rms > 0.06) {
+      voice.noise = 'noisy';
+      try { // معالجة أقوى: مرشح ترددات منخفضة في السلسلة
+        voice.src.disconnect();
+        voice.src.connect(voice.hp);
+        voice.hp.connect(voice.gain);
+      } catch {}
+      toast('المكان دوشة شوية 🌪️ قرّب الموبايل من بُقك واتكلم بصوت واضح');
+    } else {
+      voice.noise = 'quiet';
+      try { // هادئ: minimal processing حتى لا يتشوه الصوت
+        voice.src.disconnect();
+        voice.src.connect(voice.gain);
+      } catch {}
+    }
+  }, 1000);
+}
+
+/** إيقاف الستريم عند مغادرة شاشة الشات */
+function stopVoiceStream() {
+  try {
+    voice.stream?.getTracks().forEach(t => t.stop());
+    voice.ctx?.close().catch(() => {});
+  } catch {}
+  voice.stream = null;
+  voice.ctx = null;
+  voice.dest = null;
+  $('mic-on-dot')?.classList.remove('on');
+}
+function voiceScreen(active) {
+  if (active) ensureVoiceStream();
+  else {
+    if (voice.recording) finishRecording(true);
+    stopVoiceStream();
+  }
+}
+
+/** صفارة بدء 150ms + اهتزاز (لا تُلتقط لأن التسجيل يبدأ بعدها) */
+async function playStartCue() {
+  try {
+    const Ctx = window.AudioContext || window.webkitAudioContext;
+    const ctx = voice.ctx || new Ctx();
+    await ctx.resume().catch(() => {});
+    const osc = ctx.createOscillator();
+    const g = ctx.createGain();
+    osc.frequency.value = 880;
+    g.gain.setValueAtTime(0.12, ctx.currentTime);
+    g.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.15);
+    osc.connect(g).connect(ctx.destination);
+    osc.start();
+    osc.stop(ctx.currentTime + 0.16);
+  } catch {}
+  try { navigator.vibrate?.(50); } catch {}
+  await new Promise(r => setTimeout(r, 160)); // التسجيل يبدأ بعد الصفارة فلا تُسجَّل
+}
+
+function pickMime() {
+  const candidates = ['audio/webm;codecs=opus', 'audio/webm', 'audio/mp4'];
+  if (window.MediaRecorder?.isTypeSupported) {
+    for (const c of candidates) if (MediaRecorder.isTypeSupported(c)) return c;
+  }
+  return '';
+}
+
+function setRecUI(on, secs = 0) {
+  $('mic-btn').classList.toggle('recording', on);
+  $('mic-icon').style.display = on ? 'none' : '';
+  $('stop-icon').style.display = on ? '' : 'none';
+  const badge = $('rec-timer');
+  if (badge) {
+    badge.classList.toggle('on', on);
+    badge.classList.toggle('warn', on && secs >= VOICE_WARN_SEC);
+    badge.textContent = fmtClock(secs);
+  }
+}
+
+async function startRecording() {
+  if (voice.recording) return;
+  if (!await ensureVoiceStream()) return;
+  await playStartCue();
+  const mime = pickMime();
+  try {
+    voice.mr = new MediaRecorder(voice.dest ? voice.dest.stream : voice.stream,
+      { ...(mime ? { mimeType: mime } : {}), audioBitsPerSecond: 128000 });
+  } catch {
+    voice.mr = new MediaRecorder(voice.dest ? voice.dest.stream : voice.stream);
+  }
+  voice.chunks = [];
+  voice.mr.ondataavailable = e => { if (e.data?.size) voice.chunks.push(e.data); };
+  voice.mr.onstop = onRecorderStop;
+  // وضع الفحص: نسخة خام موازية للمقارنة
+  voice.mrRaw = null;
+  voice.chunksRaw = [];
+  if (voiceDebug() && voice.dest) {
+    try {
+      voice.mrRaw = new MediaRecorder(voice.stream, mime ? { mimeType: mime } : undefined);
+      voice.mrRaw.ondataavailable = e => { if (e.data?.size) voice.chunksRaw.push(e.data); };
+      voice.mrRaw.start();
+    } catch { voice.mrRaw = null; }
+  }
+  voice.mr.start();
+  voice.recording = true;
+  voice.recStart = Date.now();
+  setRecUI(true, 0);
+  clearInterval(voice.timerId);
+  voice.timerId = setInterval(() => {
+    const secs = (Date.now() - voice.recStart) / 1000;
+    setRecUI(true, secs);
+    if (secs >= VOICE_WARN_SEC && secs < VOICE_WARN_SEC + 0.3) {
+      toast('⚠️ فاضل 10 ثواني والتسجيل يقف لوحده');
+    }
+    if (secs >= VOICE_MAX_SEC) finishRecording(true); // إيقاف تلقائي مع الاحتفاظ بالمسجل
+  }, 250);
+}
+
+/** endNow=true يعني إيقاف فوري (حد 90 ثانية أو مغادرة الشاشة) */
+function finishRecording(endNow = false) {
+  if (!voice.recording) return;
+  clearInterval(voice.timerId);
+  clearTimeout(voice.stopTimerId);
+  const stopAll = () => {
+    try { voice.mr?.state !== 'inactive' && voice.mr.stop(); } catch {}
+    try { voice.mrRaw?.state !== 'inactive' && voice.mrRaw?.stop(); } catch {}
+    voice.recording = false;
+    setRecUI(false);
+  };
+  if (endNow) stopAll();
+  else voice.stopTimerId = setTimeout(stopAll, VOICE_TRAIL_MS); // ~800ms ذيل حتى لا تُقطع النهاية
+}
+
+function onRecorderStop() {
+  const type = voice.mr?.mimeType || 'audio/webm';
+  const blob = new Blob(voice.chunks, { type });
+  voice.chunks = [];
+  let rawBlob = null;
+  if (voice.mrRaw) {
+    rawBlob = new Blob(voice.chunksRaw, { type: voice.mrRaw.mimeType || type });
+    voice.chunksRaw = [];
+  }
+  if (!blob.size || blob.size < 500) {
+    toast('التسجيل فاضي، جرّب تاني.');
+    return;
+  }
+  transcribeFlow(blob, rawBlob);
+}
+
+/** حالة المعالجة: تفريغ + عداد زمني + زر إلغاء */
+function transcribeFlow(blob, rawBlob = null) {
+  const box = document.createElement('div');
+  box.className = 'processing-box';
+  const t0 = Date.now();
+  box.innerHTML = `<span class="spinner-mini"></span><span>جاري تفريغ الصوت… <b class="elapsed">0</b> ث</span>`;
+  const cancelBtn = document.createElement('button');
+  cancelBtn.className = 'cancel-link';
+  cancelBtn.textContent = 'إلغاء';
+  box.appendChild(cancelBtn);
+  $('messages-area').appendChild(box);
+  $('messages-area').scrollTop = $('messages-area').scrollHeight;
+  const elapsedTimer = setInterval(() => {
+    const el = box.querySelector('.elapsed');
+    if (el) el.textContent = Math.floor((Date.now() - t0) / 1000);
+  }, 500);
+
+  const ctrl = new AbortController();
+  voice.currentAbort = ctrl;
+  cancelBtn.onclick = () => { ctrl.abort(); };
+
+  const fd = new FormData();
+  fd.append('audio', blob, 'voice.webm');
+  fetch('/api/voice/transcribe', { method: 'POST', body: fd, signal: ctrl.signal })
+    .then(async (r) => {
+      const d = await r.json().catch(() => ({}));
+      clearInterval(elapsedTimer);
+      box.remove();
+      if (!r.ok || d.error) {
+        addMsg('assistant', d.error || 'حصل خطأ في معالجة الصوت.');
+        return;
+      }
+      showVoiceDraft({ rawText: d.rawText || d.text, text: d.text, blob, rawBlob });
+    })
+    .catch((err) => {
+      clearInterval(elapsedTimer);
+      box.remove();
+      if (err?.name === 'AbortError') toast('اتلغى التفريغ.');
+      else addMsg('assistant', 'تأكد من الاتصال وحاول مجدداً.');
+    })
+    .finally(() => { voice.currentAbort = null; });
+}
+
+/** فقاعة المسودة: عرض + تعديل + إرسال + إعادة تسجيل + حذف (+ تشغيل) */
+function showVoiceDraft({ rawText, text, blob, rawBlob = null }) {
+  const area = $('messages-area');
+  area.querySelector('.welcome-msg')?.remove();
+  const div = document.createElement('div');
+  div.className = 'draft-bubble';
+  const urls = [];
+  const body = document.createElement('div');
+  body.className = 'draft-text';
+  body.textContent = text;
+  div.appendChild(body);
+
+  const actions = document.createElement('div');
+  actions.className = 'draft-actions';
+  const mkBtn = (label, cls = '', fn) => {
+    const b = document.createElement('button');
+    b.textContent = label;
+    if (cls) b.className = cls;
+    b.onclick = fn;
+    actions.appendChild(b);
+    return b;
+  };
+  const replayBtn = mkBtn('▶ تشغيل');
+  replayBtn.onclick = () => {
+    const u = URL.createObjectURL(blob);
+    urls.push(u);
+    new Audio(u).play().catch(() => toast('تعذّر التشغيل'));
+  };
+  if (voiceDebug() && rawBlob?.size) {
+    const rawBtn = mkBtn('▶ الخام');
+    rawBtn.onclick = () => {
+      const u = URL.createObjectURL(rawBlob);
+      urls.push(u);
+      new Audio(u).play().catch(() => toast('تعذّر التشغيل'));
+    };
+    const dlBtn = mkBtn('⬇ الخام');
+    dlBtn.onclick = () => {
+      const u = URL.createObjectURL(rawBlob);
+      const a = document.createElement('a');
+      a.href = u;
+      a.download = 'voice-raw.webm';
+      a.click();
+      setTimeout(() => URL.revokeObjectURL(u), 5000);
+    };
+    const dlBtn2 = mkBtn('⬇ المعالَج');
+    dlBtn2.onclick = () => {
+      const u = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = u;
+      a.download = 'voice-processed.webm';
+      a.click();
+      setTimeout(() => URL.revokeObjectURL(u), 5000);
+    };
+  }
+  const cleanup = () => {
+    urls.forEach(u => { try { URL.revokeObjectURL(u); } catch {} });
+    div.remove();
+  };
+  mkBtn('إرسال', 'primary', async () => {
+    const finalText = (body.querySelector('textarea')?.value ?? body.textContent).trim();
+    if (!finalText) { toast('المسودة فاضية.'); return; }
+    const btns = [...actions.querySelectorAll('button')];
+    btns.forEach(b => b.disabled = true);
+    const typing = addTyping();
+    try {
+      const payload = { text: finalText };
+      if (finalText !== rawText.trim()) payload.raw_text = rawText; // متعدلة → تُحفظ كتصحيح
+      const r = await fetch('/api/chat', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+      });
+      const d = await r.json();
+      typing.remove();
+      cleanup();
+      addMsg('user', finalText);
+      addMsg('assistant', d.reply || d.error || 'حصل خطأ غير متوقع.');
+      if (d.toolsUsed?.some(t => t.includes('expense'))) loadExpenses();
+      if (d.toolsUsed?.some(t => t.includes('task'))) loadTasks();
+      if (d.toolsUsed?.some(t => t.includes('diary'))) loadDiary();
+    } catch {
+      typing.remove();
+      addMsg('assistant', 'تأكد من الاتصال وحاول مجدداً.');
+      btns.forEach(b => b.disabled = false);
+    }
+  });
+  mkBtn('تعديل', '', () => {
+    if (body.querySelector('textarea')) return;
+    const ta = document.createElement('textarea');
+    ta.value = body.textContent;
+    body.textContent = '';
+    body.appendChild(ta);
+    ta.focus();
+  });
+  mkBtn('إعادة التسجيل', '', () => {
+    cleanup();
+    toast('سجّل من جديد 🎙️');
+    startRecording();
+  });
+  mkBtn('حذف', 'danger', () => { cleanup(); toast('اتمسحت المسودة.'); });
+  div.appendChild(actions);
+  area.appendChild(div);
+  area.scrollTop = area.scrollHeight;
+}
+
+/* ربط زر الميك: ضغط مستمر (افتراضي) أو نقرة/نقرة */
+function paintMicMode() {
+  const b = $('mic-mode-btn');
+  if (b) {
+    b.textContent = voice.mode === 'hold' ? 'مستمر' : 'نقرة';
+    b.classList.toggle('active', voice.mode === 'tap');
+  }
+}
+paintMicMode();
+$('mic-mode-btn')?.addEventListener('click', () => {
+  voice.mode = voice.mode === 'hold' ? 'tap' : 'hold';
+  localStorage.setItem('daftar_voice_mode', voice.mode);
+  paintMicMode();
+  toast(voice.mode === 'hold' ? 'وضع الضغط المستمر: اضغط واستمر' : 'وضع النقرة: نقرة للبدء ونقرة للإيقاف');
 });
+(function bindMicButton() {
+  const btn = $('mic-btn');
+  btn.addEventListener('pointerdown', (e) => {
+    if (voice.mode !== 'hold' || e.button !== undefined && e.button !== 0) return;
+    e.preventDefault();
+    startRecording();
+  });
+  const release = (e) => {
+    if (voice.mode !== 'hold') return;
+    e?.preventDefault?.();
+    finishRecording(false); // +800ms ذيل
+  };
+  btn.addEventListener('pointerup', release);
+  btn.addEventListener('pointerleave', () => { if (voice.recording && voice.mode === 'hold') finishRecording(false); });
+  btn.addEventListener('pointercancel', release);
+  btn.addEventListener('contextmenu', (e) => e.preventDefault());
+  btn.addEventListener('click', () => {
+    if (voice.mode !== 'tap') return;
+    if (voice.recording) finishRecording(true);
+    else startRecording();
+  });
+})();
 
 /* ─────────────────────────────────────────────────────────────
    شاشة المصروفات (Expenses Ledger)

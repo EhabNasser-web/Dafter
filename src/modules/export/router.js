@@ -9,7 +9,7 @@
 import { Router } from 'express';
 import { requireAuth } from '../../core/auth.js';
 import { db } from '../../db/index.js';
-import { expenses, tasks, diary } from '../../db/schema.js';
+import { expenses, tasks, diary, userVocabulary, transcriptCorrections } from '../../db/schema.js';
 import { eq, desc } from 'drizzle-orm';
 import { getPlan } from '../../../config/plans.js';
 
@@ -30,13 +30,15 @@ router.get('/json', requireAuth, async (req, res) => {
   if (!gate(req, res)) return;
   try {
     const userId = req.session.userId;
-    const [exp, tsk, dry] = await Promise.all([
+    const [exp, tsk, dry, vocab, corrections] = await Promise.all([
       db.select().from(expenses).where(eq(expenses.user_id, userId)).orderBy(desc(expenses.happened_at)),
       db.select().from(tasks).where(eq(tasks.user_id, userId)).orderBy(desc(tasks.created_at)),
       db.select().from(diary).where(eq(diary.user_id, userId)).orderBy(desc(diary.day)),
+      db.select().from(userVocabulary).where(eq(userVocabulary.user_id, userId)),
+      db.select().from(transcriptCorrections).where(eq(transcriptCorrections.user_id, userId)),
     ]);
     res.setHeader('Content-Disposition', `attachment; filename="daftar-export-${stamp()}.json"`);
-    res.json({ exported_at: new Date().toISOString(), expenses: exp, tasks: tsk, diary: dry });
+    res.json({ exported_at: new Date().toISOString(), expenses: exp, tasks: tsk, diary: dry, vocabulary: vocab, transcript_corrections: corrections });
   } catch (err) {
     console.error('[export/json]', err.message);
     res.status(500).json({ error: 'خطأ في التصدير.' });

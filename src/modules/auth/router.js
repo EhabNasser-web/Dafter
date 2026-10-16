@@ -82,7 +82,7 @@ router.post('/signup', async (req, res) => {
         status: 'pending',
       });
     } catch (err) {
-      if (err.code === '23505') {
+      if (err.code === '23505' || err.cause?.code === '23505') {
         return res.status(409).json({ error: 'هذا البريد مسجل بالفعل. سجّل الدخول أو استرجع كلمة المرور.' });
       }
       throw err;

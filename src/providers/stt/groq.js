@@ -21,9 +21,10 @@ const MODEL = process.env.WHISPER_MODEL || 'whisper-large-v3'; // full model: sl
  * @param {Buffer} audioBuffer  – raw audio bytes
  * @param {string} mimeType     – e.g. 'audio/webm', 'audio/ogg', 'audio/mp3'
  * @param {string} [filename]   – hint for Groq (affects format detection)
+ * @param {{ prompt?: string }} [opts] – overrides the hint prompt (see stt/prompt.js)
  * @returns {Promise<{text: string, language: string, durationSeconds: number}>}
  */
-export async function transcribeWithGroq(audioBuffer, mimeType = 'audio/webm', filename = 'audio.webm') {
+export async function transcribeWithGroq(audioBuffer, mimeType = 'audio/webm', filename = 'audio.webm', opts = {}) {
   if (!process.env.GROQ_API_KEY) {
     throw new Error('GROQ_API_KEY is not set in environment.');
   }
@@ -38,7 +39,7 @@ export async function transcribeWithGroq(audioBuffer, mimeType = 'audio/webm', f
       form.append('file', audioBuffer, { filename, contentType: mimeType });
       form.append('model', MODEL);
       form.append('language', 'ar'); // force Arabic – speeds up and improves accuracy
-      form.append('prompt', process.env.WHISPER_PROMPT ?? DIALECT_HINT);
+      form.append('prompt', opts.prompt ?? process.env.WHISPER_PROMPT ?? DIALECT_HINT);
       form.append('response_format', 'verbose_json'); // gives us duration
       form.append('temperature', '0'); // deterministic – less creative mishearing
 

@@ -321,5 +321,40 @@ npm run backup-db
 3. تشغيل `seed-plans.js` مرة واحدة بعد النشر.
 4. `npm run backup-db` دوريًا مع `BACKUP_PASSPHRASE` محفوظ خارجيًا.
 
+---
+
+## Voice Rework · Personal Vocabulary (A–G)
+
+إعادة صياغة إدخال الصوت + مفردات شخصية لكل مستخدم.
+
+### ما اتبنى
+
+| الملف | الغرض |
+|---|---|
+| `drizzle/0007_voice_vocab.sql` | جدولا `user_vocabulary` و`transcript_corrections` (نص فقط، حذف متتالٍ) |
+| `src/providers/stt/lexicon.json` | قاموس عامية مصرية ثابت (نقود، وقت، أفعال، صلاة…) |
+| `src/providers/stt/prompt.js` | بناء تلميح Whisper قصير (≤600 حرف): مفردات المستخدم أولًا ثم القاموس |
+| `src/providers/reviewer/message.js` | رسالة مراجعة موحدة: قواعد صارمة + القاموس + مفردات المستخدم |
+| `src/core/vocabulary.js` | CRUD المفردات (سقف 200) + تصحيحات + ترقية التكرار لـ learned |
+| `src/modules/voice/router.js` | `POST /api/voice/transcribe` فقط (لا وكيل تلقائي) |
+| `src/modules/chat/router.js` | يقبل `raw_text` ويخزن التصحيح عند التعديل |
+| `src/modules/vocabulary/router.js` | CRUD المفردات `/api/vocabulary` |
+| `scripts/stt-benchmark.js` | قياس أثر التلميح/المفردات/المراجع (F1 + الحفاظ على الأرقام) |
+| `public/index.html` | ميك دافئ + ضغط/نقرة + مسودة + إعدادات المفردات |
+
+### قرارات معمارية
+
+- لا شيء يُحفظ قبل «إرسال» المسودة؛ الصوت في ذاكرة المتصفح فقط.
+- المراجع يستقبل الصوت مع المسودة عند توفره (Gemini) ويتجاهله (Groq).
+- أخطاء 4xx لا تُعاد؛ كشف rate-limit دقيق (`cause.code` لـ Drizzle).
+- المفردات والتصحيحات في التصدير والحذف، ومحجوبة عن الأدمن واللوج.
+
+### أوامر مفيدة
+
+```bash
+npm run stt-benchmark -- --audio ./sample.ogg --reference "النص المتوقع" --vocab "أحمد,المعادي"
+# وضع فحص الصوت من كونسول المتصفح: voiceDebug(true)
+```
+
 
 

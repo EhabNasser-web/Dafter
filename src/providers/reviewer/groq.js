@@ -7,16 +7,18 @@
  */
 
 import { getLLMProvider } from '../llm/index.js';
-import { SYSTEM_PROMPT } from './gemini.js';
+import { buildReviewerSystem } from './message.js';
 import { withRetry } from '../retry.js';
 
 /**
  * Review and correct an Arabic transcript.
+ * Text-only (audio opts are accepted but ignored – Groq has no audio input).
  *
  * @param {string} rawTranscript – text from Whisper
+ * @param {{ vocabularyText?: string }} [opts]
  * @returns {Promise<string>}    – corrected text
  */
-export async function reviewWithGroq(rawTranscript) {
+export async function reviewWithGroq(rawTranscript, opts = {}) {
   if (!rawTranscript?.trim()) return '';
 
   return withRetry(
@@ -25,7 +27,7 @@ export async function reviewWithGroq(rawTranscript) {
       const response = await llm.chat({
         model: process.env.REVIEWER_MODEL || process.env.GROQ_MODEL || 'openai/gpt-oss-20b',
         messages: [
-          { role: 'system', content: SYSTEM_PROMPT },
+          { role: 'system', content: buildReviewerSystem({ vocabText: opts.vocabularyText }) },
           { role: 'user', content: rawTranscript },
         ],
         temperature: 0.1,

@@ -155,6 +155,30 @@ export const jobs = pgTable('jobs', {
   updated_at: timestamp('updated_at', { withTimezone: true }).notNull().default(sql`now()`),
 });
 
+// ─── user_vocabulary (voice personalization – text only) ─────────────────────
+export const userVocabulary = pgTable('user_vocabulary', {
+  id:       uuid('id').primaryKey().default(sql`gen_random_uuid()`),
+  user_id:  uuid('user_id').notNull().references(() => users.id, { onDelete: 'cascade' }),
+  /** 'people' | 'places' | 'actions' */
+  category: varchar('category', { length: 20 }).notNull(),
+  term:     varchar('term', { length: 120 }).notNull(),
+  note:     varchar('note', { length: 255 }),
+  /** 'manual' | 'learned' */
+  source:   varchar('source', { length: 10 }).notNull().default('manual'),
+  usage_count: integer('usage_count').notNull().default(0),
+  created_at: timestamp('created_at', { withTimezone: true }).notNull().default(sql`now()`),
+  updated_at: timestamp('updated_at', { withTimezone: true }).notNull().default(sql`now()`),
+});
+
+// ─── transcript_corrections (voice personalization – text only) ───────────────
+export const transcriptCorrections = pgTable('transcript_corrections', {
+  id:        uuid('id').primaryKey().default(sql`gen_random_uuid()`),
+  user_id:   uuid('user_id').notNull().references(() => users.id, { onDelete: 'cascade' }),
+  raw_text:  text('raw_text').notNull(),
+  corrected_text: text('corrected_text').notNull(),
+  created_at: timestamp('created_at', { withTimezone: true }).notNull().default(sql`now()`),
+});
+
 // ─── push_subscriptions ───────────────────────────────────────────────────────
 export const pushSubscriptions = pgTable('push_subscriptions', {
   id:         uuid('id').primaryKey().defaultRandom(),
