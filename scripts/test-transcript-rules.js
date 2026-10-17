@@ -1,5 +1,7 @@
 import assert from 'node:assert/strict';
 import { applyTranscriptRules } from '../src/providers/stt/transcript-rules.js';
+import { isHintEcho } from '../src/providers/stt/echo-guard.js';
+import { STYLE_LINE } from '../src/providers/stt/prompt.js';
 
 const cases = [
   // [input, expected, options?]
@@ -71,7 +73,36 @@ for (const [input, expected, opts] of cases) {
   void r3;
 }
 
-const total = cases.length + 2;
+// hint-echo guard (voice: silence hallucinations echo the STT hint prompt)
+let guardCases = 0;
+{
+  const promptSample = `${STYLE_LINE} . أكل مطعم جنيه مواصلات بكرة فكرني`;
+  const echoCommas = 'صرفت خمسين جنيه على الأكل النهاردة، فكرني أكلم الدكتور بكرة، صليت ومشيت واتغديت';
+  const gcases = [
+    // echoes that must be rejected
+    [echoCommas, true], // production bug: commas broke the old token match
+    [`${echoCommas}.`, true],
+    ['صرفت خمسين جنيه على الأكل النهاردة فكرني أكلم الدكتور بكرة صليت ومشيت واتغديت', true], // no punctuation
+    ['صرفت 50 جنيه على الأكل النهاردة. فكرني أكلم الدكتور بكرة. صليت ومشيت واتغديت.', true], // after number rules
+    ['أكل مواصلات فكرني بكرة مطعم جنيه صرفت خمسين النهارده بكره اكل جنيه', true], // prompt-vomit soup
+    // real speech that must pass
+    ['أنا صرفت 65 جنيه', false],
+    ['صرفت خمسين جنيه على الأكل النهاردة', false],
+    ['فكرني أكلم الدكتور بكرة', false],
+    ['صرفت خمسين جنيه على الأكل النهاردة ودفعت تلاتين جنيه مواصلات', false],
+    ['النهاردة صليت الفجر وصحيت بدري واتمشيت شوية وبعدين صرفت خمسين جنيه على الفطار وروحت الشغل', false],
+    ['', false],
+    ['hello world this is not arabic', false],
+  ];
+  for (const [text, wantEcho] of gcases) {
+    const got = isHintEcho(text, promptSample);
+    if (got === wantEcho) pass++;
+    else fails.push({ input: `echo-guard ${JSON.stringify(text)}`, expected: `echo=${wantEcho}`, got: `echo=${got}` });
+  }
+  guardCases = gcases.length;
+}
+
+const total = cases.length + 2 + guardCases;
 console.log(`passed ${pass}/${total}`);
 if (fails.length) {
   for (const f of fails) console.log('FAIL', JSON.stringify(f));

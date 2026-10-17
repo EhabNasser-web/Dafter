@@ -34,7 +34,7 @@ export function topLexiconTerms(limit = 25) {
   return out;
 }
 
-const STYLE_LINE = 'صرفت خمسين جنيه على الأكل النهارده، فكرني أكلم الدكتور بكرة، صليت ومشيت واتغديت';
+export const STYLE_LINE = 'صرفت خمسين جنيه على الأكل النهارده، فكرني أكلم الدكتور بكرة، صليت ومشيت واتغديت';
 
 /** Approx token budget guard for the Whisper prompt. */
 export const PROMPT_CHAR_BUDGET = 600;
