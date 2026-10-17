@@ -2688,16 +2688,20 @@ $('btn-send-image').addEventListener('click', async () => {
 const voice = {
   stream: null, ctx: null, analyser: null, dest: null,
   gain: null, comp: null, hp: null,
-  recording: false, mr: null, mrRaw: null, chunks: [], chunksRaw: [],
-  noise: 'quiet', recStart: 0, timerId: null, autoStopId: null,
+  recording: false, starting: false, stopRequested: false,
+  mr: null, mrRaw: null, chunks: [], chunksRaw: [],
+  noise: 'quiet', recStart: 0, timerId: null, stopTimerId: null,
   levelRaf: 0, peakRms: 0, loudMs: 0, lastLevelT: 0,
   currentAbort: null,
 };
 const VOICE_MAX_SEC = 90, VOICE_WARN_SEC = 80, VOICE_TRAIL_MS = 800;
-/* بوابة الصمت: عتبة "صوت حقيقي" على سلسلة المعالجة (بعد التضخيم 1.6x) –
-   التسجيل بدون صوت ما بيبعتش حاجة للتفريغ/المراجع إطلاقًا (صفر توكينز) */
-const VOICE_SILENCE_RMS = 0.02; // ذروة RMS تحت ده = مفيش كلام
-const VOICE_MIN_LOUD_MS = 120;  // أقل زمن تراكمي فوق العتبة لاعتبار الكلام موجود
+/* بوابة الصمت المتدرجة: العتبة على ذروة RMS بعد التضخيم 1.6x.
+   - تحت VOICE_HARD_SILENCE_RMS = صمت فعلي → ما نرسلش حاجة (صفر توكينز)
+   - تحت VOICE_SILENCE_RMS = صوت واطي → نرسل مع تنبيه بسيط (مش هنمنع المستخدم)
+   - فوقها = صوت واضح → نرسل على طول */
+const VOICE_SILENCE_RMS = 0.02;       // حد "الصوت الواطي"
+const VOICE_HARD_SILENCE_RMS = 0.005; // حد "الصمت الفعلي"
+const VOICE_MIN_LOUD_MS = 120;        // أقل زمن تراكمي فوق العتبة لاعتبار الكلام موجود
 const voiceDebug = () => localStorage.getItem('daftar_voice_debug') === '1';
 window.voiceDebug = (on) => {
   localStorage.setItem('daftar_voice_debug', on ? '1' : '0');
@@ -2753,9 +2757,18 @@ async function ensureVoiceStream() {
     voice.comp.connect(voice.analyser);
     voice.analyser.connect(voice.dest);
     $('mic-on-dot')?.classList.add('on');
-  } catch {
-    // بدون Web Audio: نسجل الخام مباشرة
+    if (voiceDebug()) {
+      console.log('[voice] audio chain ready', {
+        ctxState: voice.ctx.state,
+        tracks: voice.stream.getAudioTracks().map(t => t.readyState),
+      });
+    }
+  } catch (e) {
+    // بدون Web Audio: نسجل الخام مباشرة + بدون بوابة صمت (مفيش قياس أصلاً)
+    console.warn('[voice] web-audio chain unavailable → raw recording:', e?.message || e);
     voice.dest = null;
+    voice.analyser = null;
+    voice.src = null;
   }
   measureAmbient();
   return true;
@@ -2817,6 +2830,11 @@ function stopVoiceStream() {
   voice.stream = null;
   voice.ctx = null;
   voice.dest = null;
+  voice.src = null;
+  voice.analyser = null;
+  voice.gain = null;
+  voice.comp = null;
+  voice.hp = null;
   $('mic-on-dot')?.classList.remove('on');
 }
 function voiceScreen(active) {
@@ -2867,48 +2885,78 @@ function setRecUI(on, secs = 0) {
 }
 
 async function startRecording() {
-  if (voice.recording) return;
-  if (!await ensureVoiceStream()) return;
-  await playStartCue();
-  const mime = pickMime();
+  if (voice.recording || voice.starting) return;
+  voice.starting = true;
+  voice.stopRequested = false;
   try {
-    voice.mr = new MediaRecorder(voice.dest ? voice.dest.stream : voice.stream,
-      { ...(mime ? { mimeType: mime } : {}), audioBitsPerSecond: 128000 });
-  } catch {
-    voice.mr = new MediaRecorder(voice.dest ? voice.dest.stream : voice.stream);
-  }
-  voice.chunks = [];
-  voice.mr.ondataavailable = e => { if (e.data?.size) voice.chunks.push(e.data); };
-  voice.mr.onstop = onRecorderStop;
-  // وضع الفحص: نسخة خام موازية للمقارنة
-  voice.mrRaw = null;
-  voice.chunksRaw = [];
-  if (voiceDebug() && voice.dest) {
-    try {
-      voice.mrRaw = new MediaRecorder(voice.stream, mime ? { mimeType: mime } : undefined);
-      voice.mrRaw.ondataavailable = e => { if (e.data?.size) voice.chunksRaw.push(e.data); };
-      voice.mrRaw.start();
-    } catch { voice.mrRaw = null; }
-  }
-  voice.mr.start();
-  voice.recording = true;
-  voice.recStart = Date.now();
-  // مراقبة المستوى: ذروة RMS + زمن الصوت الفعلي (بوابة الصمت قبل الإرسال)
-  voice.peakRms = 0;
-  voice.loudMs = 0;
-  voice.lastLevelT = performance.now();
-  cancelAnimationFrame(voice.levelRaf);
-  voice.levelRaf = requestAnimationFrame(monitorVoiceLevel);
-  setRecUI(true, 0);
-  clearInterval(voice.timerId);
-  voice.timerId = setInterval(() => {
-    const secs = (Date.now() - voice.recStart) / 1000;
-    setRecUI(true, secs);
-    if (secs >= VOICE_WARN_SEC && secs < VOICE_WARN_SEC + 0.3) {
-      toast('⚠️ فاضل 10 ثواني والتسجيل يقف لوحده');
+    if (!await ensureVoiceStream()) return;
+    if (voice.ctx?.state === 'suspended') await voice.ctx.resume().catch(() => {});
+    await playStartCue();
+    clearTimeout(voice.stopTimerId); // ذيل تسجيل قديم ما يوقفش التسجيل الجديد
+    voice.stopTimerId = null;
+    if (!voice.stream?.active) return; // المستخدم خرج من الشاشة أثناء التجهيز
+
+    const mime = pickMime();
+    const tryNew = (src, opts) => { try { return new MediaRecorder(src, opts); } catch { return null; } };
+    const src = voice.dest ? voice.dest.stream : voice.stream;
+    const mr = tryNew(src, { ...(mime ? { mimeType: mime } : {}), audioBitsPerSecond: 128000 })
+      || tryNew(src, mime ? { mimeType: mime } : undefined)
+      || tryNew(src, undefined);
+    if (!mr) {
+      toast('متصفحك مايدعمش تسجيل الصوت 🎙️ جرّب تحديث المتصفح أو Chrome/Safari حديثين');
+      return;
     }
-    if (secs >= VOICE_MAX_SEC) finishRecording(true); // إيقاف تلقائي مع الاحتفاظ بالمسجل
-  }, 250);
+    voice.mr = mr;
+
+    // نسخة خام موازية دايماً (احتياطي): لو المسار المعالج طلع فاضي على بعض
+    // الأجهزة، بنحوّل تلقائيًا للخام بدل ما نقول للمستخدم «التسجيل فاضي»
+    voice.mrRaw = null;
+    if (voice.dest && voice.stream) {
+      const mrRaw = tryNew(voice.stream, mime ? { mimeType: mime } : undefined) || tryNew(voice.stream, undefined);
+      if (mrRaw) voice.mrRaw = mrRaw;
+    }
+
+    // كل تسجيله بتمتلك مصفوفتها الخاصة: مفيش خلط بيانات لو اتعمل تسجيلين ورا بعض
+    const take = { mr, mrRaw: voice.mrRaw, chunks: [], rawChunks: [] };
+    voice.chunks = take.chunks;
+    voice.chunksRaw = take.rawChunks;
+    mr.ondataavailable = e => { if (e.data?.size) take.chunks.push(e.data); };
+    mr.onstop = () => onRecorderStop(take);
+    if (take.mrRaw) {
+      take.mrRaw.ondataavailable = e => { if (e.data?.size) take.rawChunks.push(e.data); };
+      try { take.mrRaw.start(); } catch { take.mrRaw = null; voice.mrRaw = null; }
+    }
+    try { mr.start(); } catch {
+      toast('مقدرتش أبدأ التسجيل — جرّب تاني 🎙️');
+      return;
+    }
+
+    voice.recording = true;
+    voice.recStart = Date.now();
+    // مراقبة المستوى: ذروة RMS + زمن الصوت الفعلي (بوابة الصمت قبل الإرسال)
+    voice.peakRms = 0;
+    voice.loudMs = 0;
+    voice.lastLevelT = performance.now();
+    cancelAnimationFrame(voice.levelRaf);
+    voice.levelRaf = requestAnimationFrame(monitorVoiceLevel);
+    setRecUI(true, 0);
+    clearInterval(voice.timerId);
+    voice.timerId = setInterval(() => {
+      const secs = (Date.now() - voice.recStart) / 1000;
+      setRecUI(true, secs);
+      if (secs >= VOICE_WARN_SEC && secs < VOICE_WARN_SEC + 0.3) {
+        toast('⚠️ فاضل 10 ثواني والتسجيل يقف لوحده');
+      }
+      if (secs >= VOICE_MAX_SEC) finishRecording(true); // إيقاف تلقائي مع الاحتفاظ بالمسجل
+    }, 250);
+  } finally {
+    voice.starting = false;
+    // الإفلات جه ولسه بنجهّز الميك؟ نوقف أول ما التسجيل يبدأ فعليًا
+    if (voice.stopRequested) {
+      voice.stopRequested = false;
+      if (voice.recording) finishRecording(true);
+    }
+  }
 }
 
 /** endNow=true يعني إيقاف فوري (حد 90 ثانية أو مغادرة الشاشة) */
@@ -2916,35 +2964,63 @@ function finishRecording(endNow = false) {
   if (!voice.recording) return;
   clearInterval(voice.timerId);
   clearTimeout(voice.stopTimerId);
+  const mr = voice.mr, mrRaw = voice.mrRaw; // نمسك نفس التسجيله بالذات
   const stopAll = () => {
     cancelAnimationFrame(voice.levelRaf);
-    try { voice.mr?.state !== 'inactive' && voice.mr.stop(); } catch {}
-    try { voice.mrRaw?.state !== 'inactive' && voice.mrRaw?.stop(); } catch {}
-    voice.recording = false;
-    setRecUI(false);
+    try { if (mr && mr.state !== 'inactive') mr.stop(); } catch {}
+    try { if (mrRaw && mrRaw.state !== 'inactive') mrRaw.stop(); } catch {}
+    if (voice.mr === mr) {
+      voice.recording = false;
+      setRecUI(false);
+    }
   };
   if (endNow) stopAll();
   else voice.stopTimerId = setTimeout(stopAll, VOICE_TRAIL_MS); // ~800ms ذيل حتى لا تُقطع النهاية
 }
 
-function onRecorderStop() {
+function onRecorderStop(take) {
   showLockTray(false);
-  const type = voice.mr?.mimeType || 'audio/webm';
-  const blob = new Blob(voice.chunks, { type });
-  voice.chunks = [];
+  const type = take.mr?.mimeType || 'audio/webm';
+  let blob = new Blob(take.chunks, { type });
   let rawBlob = null;
-  if (voice.mrRaw) {
-    rawBlob = new Blob(voice.chunksRaw, { type: voice.mrRaw.mimeType || type });
-    voice.chunksRaw = [];
+  if (take.mrRaw) rawBlob = new Blob(take.rawChunks, { type: take.mrRaw.mimeType || type });
+  if (voice.chunks === take.chunks) voice.chunks = [];
+  if (voice.chunksRaw === take.rawChunks) voice.chunksRaw = [];
+  const secs = Math.max(0, (Date.now() - voice.recStart) / 1000);
+
+  if (voiceDebug()) {
+    console.log('[voice] take', {
+      processedBytes: blob.size,
+      rawBytes: rawBlob ? rawBlob.size : null,
+      peakRms: Number(voice.peakRms.toFixed(4)),
+      loudMs: Math.round(voice.loudMs),
+      secs: Number(secs.toFixed(1)),
+      mime: type,
+    });
   }
+
+  // المسار المعالج طلع فاضي (مشكلة معروفة مع Web Audio على بعض الأجهزة)
+  // → نستخدم التسجيل الخام الاحتياطي بدل ما نعلن «التسجيل فاضي»
+  if (blob.size < 500 && rawBlob && rawBlob.size >= 500) {
+    if (voiceDebug()) console.log('[voice] processed blob empty → falling back to raw take');
+    blob = rawBlob;
+    rawBlob = null;
+  }
+
   if (!blob.size || blob.size < 500) {
-    toast('التسجيل فاضي، جرّب تاني.');
+    toast('التسجيل طلع فاضي — اسيب إيدك من الزرار بعد ما تخلص كلامك، واتأكد إن المايك مش مكتوم 🎙️');
     return;
   }
-  // بوابة الصمت: مفيش صوت حقيقي في التسجيل → ما نرسلش حاجة للتفريغ/المراجع (صفر توكينز)
-  if (voice.analyser && voice.peakRms < VOICE_SILENCE_RMS && voice.loudMs < VOICE_MIN_LOUD_MS) {
-    toast('عفواً — التسجيل مش فيه صوت. يُرجى التحقق من إعدادات الصوت عندك 🔇');
-    return;
+
+  // بوابة الصمت المتدرجة (لو مفيش analyser منقدرش نقيس — نرسل دايماً)
+  if (voice.analyser) {
+    if (voice.peakRms < VOICE_HARD_SILENCE_RMS && voice.loudMs < VOICE_MIN_LOUD_MS) {
+      toast('مسمعتش صوت في التسجيل — قرّب الموبايل من بُقك واتكلم بصوت واضح 🔇');
+      return;
+    }
+    if (voice.peakRms < VOICE_SILENCE_RMS) {
+      toast('الصوت واطي شوية — هحاول أفرّغه 🎙️');
+    }
   }
   transcribeFlow(blob, rawBlob);
 }
@@ -3151,7 +3227,10 @@ function showLockTray(on) {
     if (e.clientX - pressX > 48) setLockedUI(true); // سحب يمين = قفل
   });
   const release = (e) => {
-    if (!voice.recording) return;
+    if (!voice.recording) {
+      if (voice.starting) voice.stopRequested = true; // لسه بيفتح المايك — نوقف أول ما يبدأ
+      return;
+    }
     if (voice.locked) return; // مقفول: يستمر حتى نقرة الإيقاف (بما فيها pointercancel)
     e?.preventDefault?.();
     showLockTray(false);
