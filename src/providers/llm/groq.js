@@ -17,9 +17,10 @@ import { withRetry } from '../retry.js';
  * @param {Array}    opts.messages    – OpenAI-format messages array
  * @param {Array}    [opts.tools]     – OpenAI-format tools array
  * @param {number}   [opts.maxTokens] – max tokens for the response
+ * @param {string}   [opts.reasoningEffort] – 'low'|'medium'|'high' for reasoning models (GPT-OSS)
  * @returns {Promise<import('groq-sdk').ChatCompletion>}
  */
-export async function chatWithGroq({ model, messages, tools, maxTokens = 1024 }) {
+export async function chatWithGroq({ model, messages, tools, maxTokens = 1024, reasoningEffort }) {
   if (!process.env.GROQ_API_KEY) {
     throw new Error('GROQ_API_KEY is not set in environment.');
   }
@@ -34,6 +35,12 @@ export async function chatWithGroq({ model, messages, tools, maxTokens = 1024 })
         max_tokens: maxTokens,
         temperature: 0.3, // deterministic-ish for data extraction
       };
+
+      // Reasoning models (GPT-OSS): keep thinking short for speed.
+      // Silently ignored for models that don't support it.
+      if (reasoningEffort && ['low', 'medium', 'high'].includes(reasoningEffort)) {
+        params.reasoning_effort = reasoningEffort;
+      }
 
       if (tools?.length) {
         params.tools = tools;
