@@ -2690,9 +2690,14 @@ const voice = {
   gain: null, comp: null, hp: null,
   recording: false, mr: null, mrRaw: null, chunks: [], chunksRaw: [],
   noise: 'quiet', recStart: 0, timerId: null, autoStopId: null,
+  levelRaf: 0, peakRms: 0, loudMs: 0, lastLevelT: 0,
   currentAbort: null,
 };
 const VOICE_MAX_SEC = 90, VOICE_WARN_SEC = 80, VOICE_TRAIL_MS = 800;
+/* بوابة الصمت: عتبة "صوت حقيقي" على سلسلة المعالجة (بعد التضخيم 1.6x) –
+   التسجيل بدون صوت ما بيبعتش حاجة للتفريغ/المراجع إطلاقًا (صفر توكينز) */
+const VOICE_SILENCE_RMS = 0.02; // ذروة RMS تحت ده = مفيش كلام
+const VOICE_MIN_LOUD_MS = 120;  // أقل زمن تراكمي فوق العتبة لاعتبار الكلام موجود
 const voiceDebug = () => localStorage.getItem('daftar_voice_debug') === '1';
 window.voiceDebug = (on) => {
   localStorage.setItem('daftar_voice_debug', on ? '1' : '0');
@@ -2717,8 +2722,15 @@ async function ensureVoiceStream() {
         autoGainControl: true,
       },
     });
-  } catch {
-    toast('يُرجى السماح باستخدام الميكروفون');
+  } catch (e) {
+    const name = e?.name || '';
+    if (name === 'NotFoundError' || name === 'DevicesNotFoundError') {
+      toast('مفيش مايك شغال على الجهاز — اتأكد إن المايك مش مقفول من إعدادات الصوت 🔇');
+    } else if (name === 'NotReadableError' || name === 'TrackStartError') {
+      toast('المايك مش متاح: غالباً مقفول من إعدادات الصوت في الجهاز أو مستخدم من برنامج تاني 🔇');
+    } else {
+      toast('يُرجى السماح باستخدام الميكروفون');
+    }
     return false;
   }
   try {
@@ -2759,6 +2771,18 @@ function analyserRMS() {
     sum += v * v;
   }
   return Math.sqrt(sum / buf.length);
+}
+
+/** حلقة مراقبة المستوى أثناء التسجيل: ذروة RMS + الزمن التراكمي فوق عتبة الصوت */
+function monitorVoiceLevel() {
+  if (!voice.recording || !voice.analyser) return;
+  const now = performance.now();
+  const dt = Math.min(50, now - voice.lastLevelT);
+  voice.lastLevelT = now;
+  const rms = analyserRMS();
+  if (rms > voice.peakRms) voice.peakRms = rms;
+  if (rms >= VOICE_SILENCE_RMS) voice.loudMs += dt;
+  voice.levelRaf = requestAnimationFrame(monitorVoiceLevel);
 }
 
 /** قياس ضوضاء المكان ~ثانية قبل التسجيل، وتكييف السلسلة والنصيحة */
@@ -2869,6 +2893,12 @@ async function startRecording() {
   voice.mr.start();
   voice.recording = true;
   voice.recStart = Date.now();
+  // مراقبة المستوى: ذروة RMS + زمن الصوت الفعلي (بوابة الصمت قبل الإرسال)
+  voice.peakRms = 0;
+  voice.loudMs = 0;
+  voice.lastLevelT = performance.now();
+  cancelAnimationFrame(voice.levelRaf);
+  voice.levelRaf = requestAnimationFrame(monitorVoiceLevel);
   setRecUI(true, 0);
   clearInterval(voice.timerId);
   voice.timerId = setInterval(() => {
@@ -2887,6 +2917,7 @@ function finishRecording(endNow = false) {
   clearInterval(voice.timerId);
   clearTimeout(voice.stopTimerId);
   const stopAll = () => {
+    cancelAnimationFrame(voice.levelRaf);
     try { voice.mr?.state !== 'inactive' && voice.mr.stop(); } catch {}
     try { voice.mrRaw?.state !== 'inactive' && voice.mrRaw?.stop(); } catch {}
     voice.recording = false;
@@ -2908,6 +2939,11 @@ function onRecorderStop() {
   }
   if (!blob.size || blob.size < 500) {
     toast('التسجيل فاضي، جرّب تاني.');
+    return;
+  }
+  // بوابة الصمت: مفيش صوت حقيقي في التسجيل → ما نرسلش حاجة للتفريغ/المراجع (صفر توكينز)
+  if (voice.analyser && voice.peakRms < VOICE_SILENCE_RMS && voice.loudMs < VOICE_MIN_LOUD_MS) {
+    toast('عفواً — التسجيل مش فيه صوت. يُرجى التحقق من إعدادات الصوت عندك 🔇');
     return;
   }
   transcribeFlow(blob, rawBlob);

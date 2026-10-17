@@ -16,7 +16,7 @@ import { requireAuth } from '../../core/auth.js';
 import { getSttProvider, getSttFallbackProvider } from '../../providers/stt/index.js';
 import { getReviewerProvider } from '../../providers/reviewer/index.js';
 import { buildSttPrompt } from '../../providers/stt/prompt.js';
-import { applyTranscriptRules } from '../../providers/stt/transcript-rules.js';
+import { applyTranscriptRules, norm as normAr } from '../../providers/stt/transcript-rules.js';
 import { getPlan } from '../../../config/plans.js';
 import { checkQuota, logUsage } from '../../core/usage.js';
 import { sttCostEstimate } from '../../../config/costs.js';
@@ -66,6 +66,21 @@ const isMostlyArabic = (text) => {
   return letters === 0 || arabicChars / letters >= 0.3;
 };
 
+// Silence-hallucination guard: on near-silence the STT model may echo the hint
+// prompt itself back word-for-word ("صرفت خمسين جنيه على الأكل النهارده…").
+// That is not speech – reject it before the reviewer spends any tokens.
+// (Must mirror the first words of STYLE_LINE in src/providers/stt/prompt.js.)
+const HINT_ECHO_TOKENS = 'صرفت خمسين جنيه علي الاكل النهارده فكرني اكلم الدكتور بكره صليت ومشيت واتغديت'.split(' ');
+function isHintEcho(text) {
+  const words = normAr(text).split(/\s+/).filter(Boolean);
+  if (words.length < HINT_ECHO_TOKENS.length - 1 || words.length > HINT_ECHO_TOKENS.length + 2) return false;
+  let matched = 0;
+  for (let i = 0, j = 0; i < words.length && j < HINT_ECHO_TOKENS.length; i++) {
+    if (words[i] === HINT_ECHO_TOKENS[j]) { matched++; j++; }
+  }
+  return matched >= HINT_ECHO_TOKENS.length - 1;
+}
+
 /** DEBUG_STT=true → يطبع التفريغات وقائمة الإصلاحات في اللوج (نصوص فقط، لا صوت). */
 const DEBUG_STT = process.env.DEBUG_STT === 'true';
 
@@ -112,6 +127,12 @@ router.post('/transcribe', requireAuth, handleUpload, async (req, res) => {
     if (!isMostlyArabic(rawText)) {
       console.log('[voice] rejecting non-Arabic transcript');
       return res.status(422).json({ error: 'الصوت كان غير واضح والتفريغ طلع ملخبط. سجّل تاني في مكان هادي وبصوت واضح.' });
+    }
+
+    // Guard: near-silence sometimes makes the model echo the hint prompt verbatim.
+    if (isHintEcho(rawText)) {
+      console.log('[voice] rejecting hint-echo transcript (probably silence)');
+      return res.status(422).json({ error: 'التسجيل مش فيه صوت واضح. يُرجى التحقق من إعدادات الصوت عندك وسجّل تاني 🔇' });
     }
 
     // 2. Rule-based post-processing on the RAW transcript (no AI, zero cost):
