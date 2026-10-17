@@ -2688,7 +2688,7 @@ $('btn-send-image').addEventListener('click', async () => {
 const voice = {
   stream: null, ctx: null, analyser: null, dest: null,
   gain: null, comp: null, hp: null,
-  recording: false, starting: false, stopRequested: false,
+  recording: false, starting: false, tapToggle: false,
   mr: null, mrRaw: null, chunks: [], chunksRaw: [],
   noise: 'quiet', recStart: 0, timerId: null, stopTimerId: null,
   levelRaf: 0, peakRms: 0, loudMs: 0, lastLevelT: 0,
@@ -2887,7 +2887,7 @@ function setRecUI(on, secs = 0) {
 async function startRecording() {
   if (voice.recording || voice.starting) return;
   voice.starting = true;
-  voice.stopRequested = false;
+  voice.tapToggle = false;
   try {
     if (!await ensureVoiceStream()) return;
     if (voice.ctx?.state === 'suspended') await voice.ctx.resume().catch(() => {});
@@ -2924,15 +2924,16 @@ async function startRecording() {
     mr.onstop = () => onRecorderStop(take);
     if (take.mrRaw) {
       take.mrRaw.ondataavailable = e => { if (e.data?.size) take.rawChunks.push(e.data); };
-      try { take.mrRaw.start(); } catch { take.mrRaw = null; voice.mrRaw = null; }
+      try { take.mrRaw.start(250); } catch { take.mrRaw = null; voice.mrRaw = null; }
     }
-    try { mr.start(); } catch {
+    try { mr.start(250); } catch {
       toast('مقدرتش أبدأ التسجيل — جرّب تاني 🎙️');
       return;
     }
 
     voice.recording = true;
     voice.recStart = Date.now();
+    take.startedAt = voice.recStart;
     // مراقبة المستوى: ذروة RMS + زمن الصوت الفعلي (بوابة الصمت قبل الإرسال)
     voice.peakRms = 0;
     voice.loudMs = 0;
@@ -2951,10 +2952,11 @@ async function startRecording() {
     }, 250);
   } finally {
     voice.starting = false;
-    // الإفلات جه ولسه بنجهّز الميك؟ نوقف أول ما التسجيل يبدأ فعليًا
-    if (voice.stopRequested) {
-      voice.stopRequested = false;
-      if (voice.recording) finishRecording(true);
+    // نقرة سريعة (إفلات أثناء تجهيز الميك): نسيب التسجيل شغال بوضع التبديل
+    // والمستخدم يدوس تاني لما يخلص — بدل ما نوقفه فيطلع «فاضي»
+    if (voice.tapToggle && voice.recording) {
+      voice.tapToggle = false;
+      toast('🎙️ التسجيل شغال — دوس مرة تانية لما تخلص كلامك');
     }
   }
 }
@@ -2986,12 +2988,13 @@ function onRecorderStop(take) {
   if (take.mrRaw) rawBlob = new Blob(take.rawChunks, { type: take.mrRaw.mimeType || type });
   if (voice.chunks === take.chunks) voice.chunks = [];
   if (voice.chunksRaw === take.rawChunks) voice.chunksRaw = [];
-  const secs = Math.max(0, (Date.now() - voice.recStart) / 1000);
+  const secs = Math.max(0, (Date.now() - (take.startedAt || voice.recStart)) / 1000);
+  const rawBytes = rawBlob ? rawBlob.size : null;
 
   if (voiceDebug()) {
     console.log('[voice] take', {
       processedBytes: blob.size,
-      rawBytes: rawBlob ? rawBlob.size : null,
+      rawBytes,
       peakRms: Number(voice.peakRms.toFixed(4)),
       loudMs: Math.round(voice.loudMs),
       secs: Number(secs.toFixed(1)),
@@ -3008,7 +3011,15 @@ function onRecorderStop(take) {
   }
 
   if (!blob.size || blob.size < 500) {
-    toast('التسجيل طلع فاضي — اسيب إيدك من الزرار بعد ما تخلص كلامك، واتأكد إن المايك مش مكتوم 🎙️');
+    console.warn('[voice] take too small:', {
+      bytes: blob.size, rawBytes, secs: Number(secs.toFixed(2)),
+      peakRms: Number(voice.peakRms.toFixed(4)), loudMs: Math.round(voice.loudMs), mime: type,
+    });
+    if (secs < 0.6) {
+      toast(`التسجيل كان قصير أوي (${secs.toFixed(1)} ث) — سجل تاني واتكلم لحد ما تخلص 🎙️`);
+    } else {
+      toast('مسجلناش صوت في التسجيل ده — اتأكد إن المايك المختار في المتصفح هو الصح وإنه مش مكتوم 🎙️');
+    }
     return;
   }
 
@@ -3228,7 +3239,7 @@ function showLockTray(on) {
   });
   const release = (e) => {
     if (!voice.recording) {
-      if (voice.starting) voice.stopRequested = true; // لسه بيفتح المايك — نوقف أول ما يبدأ
+      if (voice.starting) voice.tapToggle = true; // نقرة سريعة: نحول لوضع التبديل
       return;
     }
     if (voice.locked) return; // مقفول: يستمر حتى نقرة الإيقاف (بما فيها pointercancel)
