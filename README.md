@@ -356,5 +356,18 @@ npm run stt-benchmark -- --audio ./sample.ogg --reference "النص المتوق
 # وضع فحص الصوت من كونسول المتصفح: voiceDebug(true)
 ```
 
+### طبقة قواعد ما بعد التفريغ (Transcript rules)
+
+| الملف | الغرض |
+|---|---|
+| `src/providers/stt/transcript-rules.js` | قواعد حتمية بلا AI: حذف هلوسة/تكرار، مفرداتك الشخصية، إملاء، أوقات، أرقام منطوقة ← أرقام |
+| `scripts/test-transcript-rules.js` | 35 حالة + مفردات — `npm run test-stt-rules` |
+| `src/core/vocabulary.js` | `getRuleVocabulary` يبني `{term, misheard}` من صفوف `user_vocabulary` (الملاحظة تُقسَّم لفروق مسموعة) |
+| `src/modules/voice/router.js` | القواعد على خام STT ← المراجع (Pro فقط) ← القواعد على النهائي، و`changes` في الرد |
+| `public/index.html` | شرائح «إصلاحات تلقائية» صغيرة تحت المسودة |
+
+- الخطة المجانية: بلا مراجع إطلاقاً — القواعد + المسودة القابلة للتعديل تكفيان.
+- `DEBUG_STT=true` يطبع التفريغات وقائمة التغييرات في اللوج (نصوص فقط، أبداً صوت).
+
 
 

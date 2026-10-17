@@ -9,6 +9,7 @@
 import { db } from '../db/index.js';
 import { userVocabulary, transcriptCorrections } from '../db/schema.js';
 import { eq, and, desc, sql } from 'drizzle-orm';
+import { norm as normArabic } from '../providers/stt/transcript-rules.js';
 
 export const VOCAB_CATEGORIES = ['people', 'places', 'actions'];
 export const VOCAB_CATEGORY_LABELS = { people: 'أشخاص', places: 'أماكن', actions: 'أفعال وأنشطة' };
@@ -121,6 +122,32 @@ export async function getVocabularyText(userId) {
   return lines.join('\n');
 }
 
+/* ── Rule-based transcript layer (src/providers/stt/transcript-rules.js) ─────── */
+
+/** Leading words users write in the note before the actual misheard form. */
+const NOTE_PREFIX_RE = /^(بيسمعها|بيسمعه|بيسمعوها|بتتقال|بيتقال|تتقال|بتنطق|بنطقها|يسمعها|غلط)\s+/;
+
+/** Split a free-text note into misheard variants (فاصلة / فاصلة منقوطة / سطر جديد). */
+export function noteToMisheard(note) {
+  if (!note) return [];
+  return String(note)
+    .split(/[،,;؛\n\/|]+/)
+    .map((s) => s.trim().replace(NOTE_PREFIX_RE, '').trim())
+    .filter(Boolean);
+}
+
+/**
+ * Vocabulary in the shape expected by applyTranscriptRules:
+ * [{ term, misheard: [...] }] – term plus the note split into misheard variants.
+ */
+export async function getRuleVocabulary(userId) {
+  const rows = await listVocabulary(userId);
+  return rows.map((r) => ({
+    term: r.term,
+    misheard: noteToMisheard(r.note).filter((m) => normArabic(m) !== normArabic(r.term)),
+  }));
+}
+
 const norm = (s) => String(s ?? '').trim().replace(/\s+/g, ' ');
 
 /** Store an edited draft as a correction; promote repeats into vocabulary. */
@@ -144,7 +171,7 @@ export async function recordCorrection(userId, rawText, correctedText) {
   const rawWords = new Set(raw.split(' '));
   const candidate = corrected.split(' ')
     .map((w) => w.replace(/[.,!?؛،؟"«»()]/g, ''))
-    .filter((w) => w && !rawWords.has(w))
+    .filter((w) => w && !rawWords.has(w) && !/^\d+([.,]\d+)?$/.test(w)) // الأرقام لا تُتعلم كمفردات
     .slice(0, 3)
     .join(' ');
   if (!candidate) return { ok: true, stored: true, promoted: false };

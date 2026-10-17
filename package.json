@@ -14,6 +14,7 @@
     "seed-admin": "node --env-file=.env scripts/seed-admin.js",
     "test-providers": "node --env-file=.env scripts/test-providers.js",
     "stt-benchmark": "node --env-file=.env scripts/stt-benchmark.js",
+    "test-stt-rules": "node scripts/test-transcript-rules.js",
     "eval-agent": "node --env-file=.env scripts/eval-agent.js",
     "test-push": "node --env-file=.env scripts/test-push.js",
     "backup-db": "node --env-file=.env scripts/backup-db.js",

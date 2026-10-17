@@ -2,8 +2,8 @@
  * src/modules/voice/router.js
  * Voice input WITHOUT automatic agent execution.
  *   POST /api/voice/transcribe (multipart, field "audio")
- *     → quotas → Whisper STT (personalized prompt) → reviewer (vocab + audio)
- *     → { rawText, text, durationSeconds }
+ *     → quotas → STT (personalized prompt) → rule-based post-processing
+ *     → reviewer (Pro only) → rules again → { rawText, text, durationSeconds, changes }
  * The chat draft UI sends the final (possibly edited) text to /api/chat,
  * which stores corrections and may learn vocabulary – nothing is recorded
  * until the user presses Send.
@@ -16,10 +16,11 @@ import { requireAuth } from '../../core/auth.js';
 import { getSttProvider, getSttFallbackProvider } from '../../providers/stt/index.js';
 import { getReviewerProvider } from '../../providers/reviewer/index.js';
 import { buildSttPrompt } from '../../providers/stt/prompt.js';
+import { applyTranscriptRules } from '../../providers/stt/transcript-rules.js';
 import { getPlan } from '../../../config/plans.js';
 import { checkQuota, logUsage } from '../../core/usage.js';
 import { sttCostEstimate } from '../../../config/costs.js';
-import { topPersonalTerms, getVocabularyText } from '../../core/vocabulary.js';
+import { topPersonalTerms, getVocabularyText, getRuleVocabulary } from '../../core/vocabulary.js';
 
 export const router = Router();
 
@@ -64,6 +65,9 @@ const isMostlyArabic = (text) => {
   const letters = (text.match(/\p{L}/gu) || []).length;
   return letters === 0 || arabicChars / letters >= 0.3;
 };
+
+/** DEBUG_STT=true → يطبع التفريغات وقائمة الإصلاحات في اللوج (نصوص فقط، لا صوت). */
+const DEBUG_STT = process.env.DEBUG_STT === 'true';
 
 router.post('/transcribe', requireAuth, handleUpload, async (req, res) => {
   try {
@@ -110,26 +114,59 @@ router.post('/transcribe', requireAuth, handleUpload, async (req, res) => {
       return res.status(422).json({ error: 'الصوت كان غير واضح والتفريغ طلع ملخبط. سجّل تاني في مكان هادي وبصوت واضح.' });
     }
 
-    // 2. Review/correct (skipped on free plan to save cost)
-    let text = rawText;
+    // 2. Rule-based post-processing on the RAW transcript (no AI, zero cost):
+    //    junk → loops → personal vocabulary → spellings → times → numbers.
+    const ruleVocabulary = await getRuleVocabulary(userId).catch(() => []);
+    const prePass = applyTranscriptRules(rawText, { vocabulary: ruleVocabulary });
+
+    // 3. Review/correct (Pro only – free relies on the rules + the editable draft)
+    let reviewed = prePass.text;
     if (plan.use_reviewer) {
       try {
         const reviewer = getReviewerProvider();
         const vocabularyText = await getVocabularyText(userId).catch(() => '');
-        text = await reviewer(rawText, {
+        reviewed = await reviewer(prePass.text, {
           vocabularyText,
           audio: { buffer: req.file.buffer, mimeType: mime },
         });
       } catch (revErr) {
-        console.error('[voice] Reviewer failed, continuing with raw transcript:', revErr.message);
+        console.error('[voice] Reviewer failed, continuing with rules output:', revErr.message);
       }
+    }
+
+    // 4. Rules again on the final text before the draft is shown
+    const finalPass = applyTranscriptRules(reviewed, { vocabulary: ruleVocabulary });
+    if (!finalPass.text.trim()) {
+      return res.status(422).json({ error: 'لم أسمع شيئاً واضحاً. سجّل مجدداً بصوت أعلى.' });
+    }
+
+    // Combined, de-duplicated change list (rendered under the draft)
+    const seen = new Set();
+    const changes = [...prePass.changes, ...finalPass.changes].filter((c) => {
+      const key = `${c.rule}|${c.from}|${c.to}`;
+      if (seen.has(key)) return false;
+      seen.add(key);
+      return true;
+    });
+
+    if (DEBUG_STT) {
+      console.log('[voice] raw transcript:', rawText.trim());
+      console.log('[voice] rules(pre-reviewer):', prePass.text.trim());
+      if (plan.use_reviewer) console.log('[voice] reviewed transcript:', reviewed.trim());
+      console.log('[voice] final transcript:', finalPass.text.trim());
+      console.log('[voice] stt-rules changes:', JSON.stringify(changes));
     }
 
     // Fire-and-forget accounting (message counted at Send)
     logUsage(userId, 'voice', 1, 0);
     logUsage(userId, 'voice_seconds', durationSeconds ?? 0, sttCostEstimate(durationSeconds ?? 0));
 
-    res.json({ rawText: rawText.trim(), text: text.trim(), durationSeconds: durationSeconds ?? 0 });
+    res.json({
+      rawText: rawText.trim(),
+      text: finalPass.text.trim(),
+      durationSeconds: durationSeconds ?? 0,
+      changes,
+    });
   } catch (err) {
     console.error('[voice] Transcribe error:', err.message);
     res.status(500).json({ error: 'معلش، فيه مشكلة. جرب تاني.' });
